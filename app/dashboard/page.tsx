@@ -25,8 +25,7 @@ export default function Dashboard() {
         return;
       }
       setProfile(data);
-      setLoading(false);setProfile(data);
-      setLoading(false);
+    setLoading(false);
     }
     load();
   }, [router]);
