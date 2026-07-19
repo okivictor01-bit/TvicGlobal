@@ -164,3 +164,143 @@ export default function PurchaseEntry() {
           <label className="text-xs opacity-60 block mb-1">Product</label>
           <select
             className="w-full bg-surface border border-white/10 rounded-md p-3"
+            value={productId}
+            onChange={(e) => {
+              setProductId(e.target.value);
+              const p = products.find((x) => x.id === e.target.value);
+              if (p) setPrice(Number(p.price_per_kg));
+            }}
+          >
+            {products.map((p) => (
+              <option key={p.id} value={p.id}>{p.name}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="text-xs opacity-60 block mb-1">Weight (kg)</label>
+            <input
+              type="number"
+              className="w-full bg-surface border border-white/10 rounded-md p-3"
+              value={weight}
+              onChange={(e) => setWeight(parseFloat(e.target.value) || 0)}
+            />
+          </div>
+          <div>
+            <label className="text-xs opacity-60 block mb-1">Price per kg (NGN)</label>
+            <input
+              type="number"
+              className="w-full bg-surface border border-white/10 rounded-md p-3"
+              value={price}
+              onChange={(e) => setPrice(parseFloat(e.target.value) || 0)}
+            />
+          </div>
+        </div>
+
+        {product?.test_type === "moisture" ? (
+          <div>
+            <label className="text-xs opacity-60 block mb-1">Moisture level (%)</label>
+            <input
+              type="number"
+              step="0.1"
+              className="w-full bg-surface border border-white/10 rounded-md p-3"
+              value={moisture}
+              onChange={(e) => setMoisture(parseFloat(e.target.value) || 0)}
+            />
+          </div>
+        ) : (
+          <div>
+            <label className="text-xs opacity-60 block mb-1">Counter scale grade</label>
+            <select
+              className="w-full bg-surface border border-white/10 rounded-md p-3"
+              value={grade}
+              onChange={(e) => setGrade(e.target.value)}
+            >
+              {rulesForProduct.map((r) => (
+                <option key={r.id} value={r.grade_value}>
+                  {r.band_label} ({r.discount_pct}%)
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        <div>
+          <label className="text-xs opacity-60 block mb-1">Advance to deduct (NGN)</label>
+          <input
+            type="number"
+            className="w-full bg-surface border border-white/10 rounded-md p-3"
+            value={advanceDeduct}
+            onChange={(e) => setAdvanceDeduct(parseFloat(e.target.value) || 0)}
+          />
+        </div>
+
+        <div className="border border-white/10 rounded-lg p-4 space-y-2 text-sm">
+          <div className="flex justify-between">
+            <span className="opacity-60">Gross value</span>
+            <span className="font-mono">NGN {gross.toLocaleString()}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="opacity-60">Quality result</span>
+            <span className="font-mono">{resultLabel}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="opacity-60">Quality discount ({pct}%)</span>
+            <span className="font-mono text-rust">- NGN {discountValue.toLocaleString()}</span>
+          </div>
+          <div className="flex justify-between border-t border-white/10 pt-2">
+            <span className="opacity-60">Net value</span>
+            <span className="font-mono">NGN {netValue.toLocaleString()}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="opacity-60">Advance deducted</span>
+            <span className="font-mono text-rust">- NGN {deduct.toLocaleString()}</span>
+          </div>
+          <div className="flex justify-between border-t border-white/10 pt-2 text-base font-semibold">
+            <span>Final amount payable</span>
+            <span className="text-gold font-mono">NGN {finalPay.toLocaleString()}</span>
+          </div>
+        </div>
+
+        {error && <p className="text-rust text-sm">{error}</p>}
+
+        <button
+          type="submit"
+          disabled={saving}
+          className="w-full bg-gold text-ink font-semibold rounded-md p-3 disabled:opacity-50"
+        >
+          {saving ? "Saving..." : "Record Purchase & Generate Receipt"}
+        </button>
+      </form>
+
+      {receipt && (
+        <div className="mt-6 bg-[#F8F3E6] text-[#241E15] rounded-lg p-5 font-mono text-sm">
+          <p className="font-semibold text-base mb-1">TvicGlobal</p>
+          <p className="text-xs opacity-60 mb-3">Purchase Receipt</p>
+          <div className="flex justify-between border-b border-dashed border-black/20 py-1">
+            <span>Farmer</span><span>{receipt.farmerName}</span>
+          </div>
+          <div className="flex justify-between border-b border-dashed border-black/20 py-1">
+            <span>Product</span><span>{receipt.productName}</span>
+          </div>
+          <div className="flex justify-between border-b border-dashed border-black/20 py-1">
+            <span>Weight</span><span>{receipt.weight_kg} kg</span>
+          </div>
+          <div className="flex justify-between border-b border-dashed border-black/20 py-1">
+            <span>Quality</span><span>{receipt.quality_result}</span>
+          </div>
+          <div className="flex justify-between border-b border-dashed border-black/20 py-1">
+            <span>Discount</span><span>- NGN {Number(receipt.quality_discount_value).toLocaleString()}</span>
+          </div>
+          <div className="flex justify-between border-b border-dashed border-black/20 py-1">
+            <span>Advance deducted</span><span>- NGN {Number(receipt.advance_deducted).toLocaleString()}</span>
+          </div>
+          <div className="flex justify-between font-bold pt-2">
+            <span>Final amount paid</span><span>NGN {Number(receipt.final_amount_paid).toLocaleString()}</span>
+          </div>
+        </div>
+      )}
+    </main>
+  );
+}
