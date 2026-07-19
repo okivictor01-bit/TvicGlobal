@@ -36,7 +36,7 @@ export default async function TestPlans() {
             >
               <span>{plan.name}</span>
               <span className="font-mono text-gold">
-                &#8358{Number(plan.price).toLocaleString()} / {plan.billing_cycle}
+              {"\u20A6"}{Number(plan.price).toLocaleString()} / {plan.billing_cycle}
               </span>
             </li>
           ))}
