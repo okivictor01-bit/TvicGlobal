@@ -31,7 +31,7 @@ export default function PurchaseEntry() {
   async function load() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { router.push("/login"); return; }
-    const { data: prof } = await supabase.from("app_users").select("*").eq("id", user.id).single();
+    const { data: prof } = await supabase.from("app_users").select("*, businesses(name)").eq("id", user.id).single();
     if (!prof || !["owner", "manager", "secretary"].includes(prof.role)) {
       router.push("/dashboard");
       return;
@@ -40,13 +40,13 @@ export default function PurchaseEntry() {
 
     const { data: farmerList } = await supabase.from("farmers").select("*").order("name");
     setFarmers(farmerList || []);
-    if (farmerList && farmerList.length > 0) setFarmerId(farmerList[0].id);
+    if (farmerList && farmerList.length > 0) setFarmerId((prev) => prev || farmerList[0].id);
 
     const { data: productList } = await supabase.from("products").select("*").order("name");
     setProducts(productList || []);
     if (productList && productList.length > 0) {
-      setProductId(productList[0].id);
-      setPrice(Number(productList[0].price_per_kg));
+      setProductId((prev) => prev || productList[0].id);
+      setPrice((prev) => prev || Number(productList[0].price_per_kg));
     }
 
     const { data: rules } = await supabase.from("quality_rules").select("*");
@@ -83,7 +83,7 @@ export default function PurchaseEntry() {
   const discountValue = gross * (pct / 100);
   const netValue = gross - discountValue;
   const farmerBalance = balances[farmerId] || 0;
-  const deduct = Math.min(advanceDeduct || 0, farmerBalance, netValue);
+  const deduct = Math.min(advanceDeduct || 0, farmerBalance, netValue > 0 ? netValue : 0);
   const finalPay = netValue - deduct;
 
   async function handleSubmit(e: React.FormEvent) {
@@ -218,9 +218,7 @@ export default function PurchaseEntry() {
               onChange={(e) => setGrade(e.target.value)}
             >
               {rulesForProduct.map((r) => (
-                <option key={r.id} value={r.grade_value}>
-                  {r.band_label} ({r.discount_pct}%)
-                </option>
+                <option key={r.id} value={r.grade_value}>{r.band_label} ({r.discount_pct}%)</option>
               ))}
             </select>
           </div>
@@ -237,30 +235,12 @@ export default function PurchaseEntry() {
         </div>
 
         <div className="border border-white/10 rounded-lg p-4 space-y-2 text-sm">
-          <div className="flex justify-between">
-            <span className="opacity-60">Gross value</span>
-            <span className="font-mono">NGN {gross.toLocaleString()}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="opacity-60">Quality result</span>
-            <span className="font-mono">{resultLabel}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="opacity-60">Quality discount ({pct}%)</span>
-            <span className="font-mono text-rust">- NGN {discountValue.toLocaleString()}</span>
-          </div>
-          <div className="flex justify-between border-t border-white/10 pt-2">
-            <span className="opacity-60">Net value</span>
-            <span className="font-mono">NGN {netValue.toLocaleString()}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="opacity-60">Advance deducted</span>
-            <span className="font-mono text-rust">- NGN {deduct.toLocaleString()}</span>
-          </div>
-          <div className="flex justify-between border-t border-white/10 pt-2 text-base font-semibold">
-            <span>Final amount payable</span>
-            <span className="text-gold font-mono">NGN {finalPay.toLocaleString()}</span>
-          </div>
+          <div className="flex justify-between"><span className="opacity-60">Gross value</span><span className="font-mono">NGN {gross.toLocaleString()}</span></div>
+          <div className="flex justify-between"><span className="opacity-60">Quality result</span><span className="font-mono">{resultLabel}</span></div>
+          <div className="flex justify-between"><span className="opacity-60">Quality discount ({pct}%)</span><span className="font-mono text-rust">- NGN {discountValue.toLocaleString()}</span></div>
+          <div className="flex justify-between border-t border-white/10 pt-2"><span className="opacity-60">Net value</span><span className="font-mono">NGN {netValue.toLocaleString()}</span></div>
+          <div className="flex justify-between"><span className="opacity-60">Advance deducted</span><span className="font-mono text-rust">- NGN {deduct.toLocaleString()}</span></div>
+          <div className="flex justify-between border-t border-white/10 pt-2 text-base font-semibold"><span>Final amount payable</span><span className="text-gold font-mono">NGN {finalPay.toLocaleString()}</span></div>
         </div>
 
         {error && <p className="text-rust text-sm">{error}</p>}
@@ -276,29 +256,15 @@ export default function PurchaseEntry() {
 
       {receipt && (
         <div className="mt-6 bg-[#F8F3E6] text-[#241E15] rounded-lg p-5 font-mono text-sm">
-          <p className="font-semibold text-base mb-1">TvicGlobal</p>
-          <p className="text-xs opacity-60 mb-3">Purchase Receipt</p>
-          <div className="flex justify-between border-b border-dashed border-black/20 py-1">
-            <span>Farmer</span><span>{receipt.farmerName}</span>
-          </div>
-          <div className="flex justify-between border-b border-dashed border-black/20 py-1">
-            <span>Product</span><span>{receipt.productName}</span>
-          </div>
-          <div className="flex justify-between border-b border-dashed border-black/20 py-1">
-            <span>Weight</span><span>{receipt.weight_kg} kg</span>
-          </div>
-          <div className="flex justify-between border-b border-dashed border-black/20 py-1">
-            <span>Quality</span><span>{receipt.quality_result}</span>
-          </div>
-          <div className="flex justify-between border-b border-dashed border-black/20 py-1">
-            <span>Discount</span><span>- NGN {Number(receipt.quality_discount_value).toLocaleString()}</span>
-          </div>
-          <div className="flex justify-between border-b border-dashed border-black/20 py-1">
-            <span>Advance deducted</span><span>- NGN {Number(receipt.advance_deducted).toLocaleString()}</span>
-          </div>
-          <div className="flex justify-between font-bold pt-2">
-            <span>Final amount paid</span><span>NGN {Number(receipt.final_amount_paid).toLocaleString()}</span>
-          </div>
+          <p className="font-semibold text-base mb-1">{profile?.businesses?.name || "Business"}</p>
+          <p className="text-xs opacity-60 mb-3">Purchase Receipt - Powered by TvicGlobal</p>
+          <div className="flex justify-between border-b border-dashed border-black/20 py-1"><span>Farmer</span><span>{receipt.farmerName}</span></div>
+          <div className="flex justify-between border-b border-dashed border-black/20 py-1"><span>Product</span><span>{receipt.productName}</span></div>
+          <div className="flex justify-between border-b border-dashed border-black/20 py-1"><span>Weight</span><span>{receipt.weight_kg} kg</span></div>
+          <div className="flex justify-between border-b border-dashed border-black/20 py-1"><span>Quality</span><span>{receipt.quality_result}</span></div>
+          <div className="flex justify-between border-b border-dashed border-black/20 py-1"><span>Discount</span><span>- NGN {Number(receipt.quality_discount_value).toLocaleString()}</span></div>
+          <div className="flex justify-between border-b border-dashed border-black/20 py-1"><span>Advance deducted</span><span>- NGN {Number(receipt.advance_deducted).toLocaleString()}</span></div>
+          <div className="flex justify-between font-bold pt-2"><span>Final amount paid</span><span>NGN {Number(receipt.final_amount_paid).toLocaleString()}</span></div>
         </div>
       )}
     </main>
