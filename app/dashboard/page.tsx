@@ -41,6 +41,11 @@ export default function Dashboard() {
       <h1 className="text-2xl font-semibold mb-1">
         Welcome, {profile?.full_name || "there"}
       </h1>
+      {(profile?.role === "owner" || profile?.role === "manager") && (
+  <a href="/staff/invite" className="text-xs text-gold underline mb-2 inline-block">
+    + Invite Staff
+  </a>
+)}
       <p className="text-sm opacity-70 mb-6">
         Role: {profile?.role} {profile?.businesses?.name ? `· ${profile.businesses.name}` : "· Platform Admin"}
       </p>
