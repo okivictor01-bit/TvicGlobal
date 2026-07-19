@@ -20,7 +20,12 @@ export default function Dashboard() {
         .select("*, businesses(name)")
         .eq("id", user.id)
         .single();
+      if (data?.role === "super_admin") {
+        router.push("/admin/dashboard");
+        return;
+      }
       setProfile(data);
+      setLoading(false);setProfile(data);
       setLoading(false);
     }
     load();
