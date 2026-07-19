@@ -90,7 +90,7 @@ export default function StaffList() {
             {resetResult?.id === s.id && (
               <div className="mt-3 border border-olive rounded-md p-3">
                 <p className="text-olive text-sm mb-1">New password ✓</p>
-                <p className="font-mono text-sm">{resetResult.password}</p>
+                <p className="font-mono text-sm">{resetResult?.password}</p>
                 <p className="text-xs opacity-60 mt-1">Share this with {s.full_name} directly.</p>
               </div>
             )}
