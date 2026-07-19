@@ -1,9 +1,7 @@
 import { supabase } from "@/lib/supabaseClient";
-import { supabase } from "@/lib/supabaseClient";
 
 export const dynamic = "force-dynamic";
 
-export default async function TestPlans() {
 export default async function TestPlans() {
   const { data: plans, error } = await supabase
     .from("subscription_plans")
