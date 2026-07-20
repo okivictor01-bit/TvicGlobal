@@ -17,8 +17,8 @@ export default function InventoryPage() {
   }, []);
 
   useEffect(() => {
-    if (profile) computeInventory();
-  }, [branchFilter, profile]);
+  if (profile) computeInventory();
+}, [branchFilter, profile, products]);
 
   async function load() {
     const { data: { user } } = await supabase.auth.getUser();
