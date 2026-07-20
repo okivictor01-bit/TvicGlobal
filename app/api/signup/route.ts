@@ -24,10 +24,11 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: authError?.message || "Could not create user." }, { status: 400 });
   }
 
-  // 2. Create the business (tenant)
+  // 2. Create the business (tenant), starting a 7-day free trial
+  const trialEndsAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
   const { data: business, error: bizError } = await supabaseAdmin
     .from("businesses")
-    .insert({ name: businessName, slug, subscription_status: "trial" })
+    .insert({ name: businessName, slug, subscription_status: "trial", trial_ends_at: trialEndsAt })
     .select()
     .single();
   if (bizError) {
