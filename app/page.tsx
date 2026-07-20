@@ -13,13 +13,13 @@ export default function Home() {
       </p>
 
       <div className="w-full max-w-xs space-y-3">
-        <a
+        
           href="/login"
           className="block w-full bg-gold text-ink font-semibold rounded-md p-3"
         >
           Log In
         </a>
-        <a
+        
           href="/signup"
           className="block w-full border border-white/10 rounded-md p-3"
         >
