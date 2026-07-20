@@ -35,7 +35,7 @@ export default function BillingCallback() {
 
       {status === "success" && (
         <>
-          <p className="text-lg font-semibold mb-4">Payment confirmed. You're all set!</p>
+          <p className="text-lg font-semibold mb-4">Payment confirmed. You are all set!</p>
           <button
             onClick={() => router.push("/dashboard")}
             className="bg-gold text-ink font-semibold px-4 py-2 rounded-md"
