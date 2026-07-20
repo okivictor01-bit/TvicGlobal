@@ -25,7 +25,7 @@ export default function StaffList() {
       }
       setProfile(prof);
 
-      let query = supabase.from("app_users").select("*").neq("id", user.id);
+      let query = supabase.from("app_users").select("*").neq("id", user.id).neq("role", "owner");
       if (prof.role === "manager") {
         query = query.eq("branch_id", prof.branch_id);
       } else {
