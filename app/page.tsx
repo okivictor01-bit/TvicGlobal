@@ -25,6 +25,9 @@ export default function Home() {
         >
           Sign Up
         </a>
+      </div><div className="flex gap-4 mt-10 text-xs opacity-60">
+        <a href="/faq" className="underline">FAQ</a>
+        <a href="/contact" className="underline">Contact</a>
       </div>
     </main>
   );
