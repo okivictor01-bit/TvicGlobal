@@ -47,7 +47,7 @@ export default function BillingCallback() {
 
       {status === "failed" && (
         <>
-          <p className="text-lg font-semibold mb-4 text-rust">We couldn't confirm this payment.</p>
+          <p className="text-lg font-semibold mb-4 text-rust">We could not confirm this payment.</p>
           <button
             onClick={() => router.push("/billing")}
             className="bg-gold text-ink font-semibold px-4 py-2 rounded-md"
