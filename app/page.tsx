@@ -13,19 +13,15 @@ export default function Home() {
       </p>
 
       <div className="w-full max-w-xs space-y-3">
-        
-          href="/login"
-          className="block w-full bg-gold text-ink font-semibold rounded-md p-3"
-        >
+        <a href="/login" className="block w-full bg-gold text-ink font-semibold rounded-md p-3">
           Log In
         </a>
-        
-          href="/signup"
-          className="block w-full border border-white/10 rounded-md p-3"
-        >
+        <a href="/signup" className="block w-full border border-white/10 rounded-md p-3">
           Sign Up
         </a>
-      </div><div className="flex gap-4 mt-10 text-xs opacity-60">
+      </div>
+
+      <div className="flex gap-4 mt-10 text-xs opacity-60">
         <a href="/faq" className="underline">FAQ</a>
         <a href="/contact" className="underline">Contact</a>
       </div>
