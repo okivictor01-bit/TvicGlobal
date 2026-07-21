@@ -11,6 +11,7 @@ export default function FarmersPage() {
   const [newFarmer, setNewFarmer] = useState({ name: "", phone: "", location: "" });
   const [advanceAmount, setAdvanceAmount] = useState<Record<string, string>>({});
   const [error, setError] = useState("");
+  const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
