@@ -1,1 +1,311 @@
-hdjjdjdifid
+"use client";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabaseClient";
+
+export default function PurchaseEntry() {
+  const router = useRouter();
+  const [profile, setProfile] = useState<any>(null);
+  const [farmers, setFarmers] = useState<any[]>([]);
+  const [products, setProducts] = useState<any[]>([]);
+  const [qualityRules, setQualityRules] = useState<any[]>([]);
+  const [balances, setBalances] = useState<Record<string, number>>({});
+  const [branches, setBranches] = useState<any[]>([]);
+
+  const [branchId, setBranchId] = useState("");
+  const [farmerId, setFarmerId] = useState("");
+  const [productId, setProductId] = useState("");
+  const [weight, setWeight] = useState<number>(0);
+  const [price, setPrice] = useState<number>(0);
+  const [moisture, setMoisture] = useState<number>(0);
+  const [grade, setGrade] = useState("A");
+  const [discountPct, setDiscountPct] = useState<number>(0);
+  const [advanceDeduct, setAdvanceDeduct] = useState<number>(0);
+
+  const [receipt, setReceipt] = useState<any>(null);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  async function load() {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { router.push("/login"); return; }
+    const { data: prof } = await supabase.from("app_users").select("*, businesses(name)").eq("id", user.id).single();
+    if (!prof || !["owner", "manager", "secretary"].includes(prof.role)) {
+      router.push("/dashboard");
+      return;
+    }
+    setProfile(prof);
+    setBranchId(prof.branch_id);
+
+    if (prof.role === "owner") {
+      const { data: branchList } = await supabase.from("branches").select("*").order("name");
+      setBranches(branchList || []);
+    }
+
+    const { data: farmerList } = await supabase.from("farmers").select("*").order("name");
+    setFarmers(farmerList || []);
+    if (farmerList && farmerList.length > 0) setFarmerId((prev) => prev || farmerList[0].id);
+
+    const { data: productList } = await supabase.from("products").select("*").order("name");
+    setProducts(productList || []);
+    if (productList && productList.length > 0) {
+      setProductId((prev) => prev || productList[0].id);
+      setPrice((prev) => prev || Number(productList[0].price_per_kg));
+    }
+
+    const { data: rules } = await supabase.from("quality_rules").select("*");
+    setQualityRules(rules || []);
+
+    const { data: advancesData } = await supabase.from("advances").select("farmer_id, amount");
+    const { data: purchasesData } = await supabase.from("purchases").select("farmer_id, advance_deducted");
+    const bal: Record<string, number> = {};
+    (advancesData || []).forEach((a: any) => { bal[a.farmer_id] = (bal[a.farmer_id] || 0) + Number(a.amount); });
+    (purchasesData || []).forEach((p: any) => { bal[p.farmer_id] = (bal[p.farmer_id] || 0) - Number(p.advance_deducted || 0); });
+    setBalances(bal);
+
+    setLoading(false);
+  }
+
+  const product = products.find((p) => p.id === productId);
+  const rulesForProduct = qualityRules.filter((r) => r.product_id === productId);
+
+  function getResultLabel() {
+    if (!product) return "";
+    return product.test_type === "moisture" ? `${moisture}% moisture` : `Grade ${grade}`;
+  }
+
+  const gross = weight * price;
+  const pct = discountPct;
+  const resultLabel = getResultLabel();
+  const discountValue = gross * (pct / 100);
+  const netValue = gross - discountValue;
+  const farmerBalance = balances[farmerId] || 0;
+  const deduct = Math.min(advanceDeduct || 0, farmerBalance, netValue > 0 ? netValue : 0);
+  const finalPay = netValue - deduct;
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setSaving(true);
+    setError("");
+
+    const { data, error: insertError } = await supabase
+      .from("purchases")
+      .insert({
+        business_id: profile.business_id,
+        branch_id: branchId,
+        farmer_id: farmerId,
+        product_id: productId,
+        weight_kg: weight,
+        price_per_kg: price,
+        gross_value: gross,
+        quality_test_type: product.test_type,
+        quality_result: resultLabel,
+        quality_discount_pct: pct,
+        quality_discount_value: discountValue,
+        net_value: netValue,
+        advance_deducted: deduct,
+        final_amount_paid: finalPay,
+        recorded_by: profile.id,
+        approval_status: "auto_approved",
+      })
+      .select()
+      .single();
+
+    if (insertError) {
+      setError(insertError.message);
+      setSaving(false);
+      return;
+    }
+
+    setReceipt({
+      ...data,
+      farmerName: farmers.find((f) => f.id === farmerId)?.name,
+      productName: product?.name,
+    });
+    setSaving(false);
+    load();
+  }
+
+  if (loading) return <main className="min-h-screen flex items-center justify-center">Loading...</main>;
+
+  if (farmers.length === 0) {
+    return (
+      <main className="min-h-screen p-8 max-w-md mx-auto">
+        <p className="text-sm opacity-70 mb-4">You need at least one farmer before recording a purchase.</p>
+        <a href="/farmers" className="text-gold underline text-sm">+ Add a farmer</a>
+      </main>
+    );
+  }
+
+  return (
+    <>
+      <style>{`
+        @media print {
+          .no-print { display: none !important; }
+          body { background: white !important; color: black !important; }
+        }
+      `}</style>
+      <main className="min-h-screen p-8 max-w-lg mx-auto">
+        <p className="no-print font-mono text-xs tracking-widest text-gold uppercase mb-1">TvicGlobal</p>
+        <h1 className="no-print text-2xl font-semibold mb-6">Record a Purchase</h1>
+
+        <form onSubmit={handleSubmit} className="no-print space-y-4">
+        {profile?.role === "owner" && branches.length > 1 && (
+          <div>
+            <label className="text-xs opacity-60 block mb-1">Branch</label>
+            <select
+              className="w-full bg-surface border border-white/10 rounded-md p-3"
+              value={branchId}
+              onChange={(e) => setBranchId(e.target.value)}
+            >
+              {branches.map((b) => (
+                <option key={b.id} value={b.id}>{b.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
+        <div>
+          <label className="text-xs opacity-60 block mb-1">Farmer</label>
+          <select
+            className="w-full bg-surface border border-white/10 rounded-md p-3"
+            value={farmerId}
+            onChange={(e) => setFarmerId(e.target.value)}
+          >
+            {farmers.map((f) => (
+              <option key={f.id} value={f.id}>{f.name}</option>
+            ))}
+          </select>
+          <p className="text-xs opacity-60 mt-1">Outstanding advance: NGN {farmerBalance.toLocaleString()}</p>
+        </div>
+
+        <div>
+          <label className="text-xs opacity-60 block mb-1">Product</label>
+          <select
+            className="w-full bg-surface border border-white/10 rounded-md p-3"
+            value={productId}
+            onChange={(e) => {
+              setProductId(e.target.value);
+              const p = products.find((x) => x.id === e.target.value);
+              if (p) setPrice(Number(p.price_per_kg));
+            }}
+          >
+            {products.map((p) => (
+              <option key={p.id} value={p.id}>{p.name}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="text-xs opacity-60 block mb-1">Weight (kg)</label>
+            <input
+              type="number"
+              className="w-full bg-surface border border-white/10 rounded-md p-3"
+              value={weight}
+              onChange={(e) => setWeight(parseFloat(e.target.value) || 0)}
+            />
+          </div>
+          <div>
+            <label className="text-xs opacity-60 block mb-1">Price per kg (NGN)</label>
+            <input
+              type="number"
+              className="w-full bg-surface border border-white/10 rounded-md p-3"
+              value={price}
+              onChange={(e) => setPrice(parseFloat(e.target.value) || 0)}
+            />
+          </div>
+        </div>
+
+        {product?.test_type === "moisture" ? (
+          <div>
+            <label className="text-xs opacity-60 block mb-1">Moisture level (%)</label>
+            <input
+              type="number"
+              step="0.1"
+              className="w-full bg-surface border border-white/10 rounded-md p-3"
+              value={moisture}
+              onChange={(e) => setMoisture(parseFloat(e.target.value) || 0)}
+            />
+          </div>
+        ) : (
+          <div>
+            <label className="text-xs opacity-60 block mb-1">Counter scale grade</label>
+            <select
+              className="w-full bg-surface border border-white/10 rounded-md p-3"
+              value={grade}
+              onChange={(e) => setGrade(e.target.value)}
+            >
+              {rulesForProduct.map((r) => (
+                <option key={r.id} value={r.grade_value}>{r.band_label} ({r.discount_pct}%)</option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        <div>
+          <label className="text-xs opacity-60 block mb-1">Quality discount (%)</label>
+          <input
+            type="number"
+            step="0.1"
+            className="w-full bg-surface border border-white/10 rounded-md p-3"
+            value={discountPct}
+            onChange={(e) => setDiscountPct(parseFloat(e.target.value) || 0)}
+          />
+        </div>
+
+        <div>
+          <label className="text-xs opacity-60 block mb-1">Advance to deduct (NGN)</label>
+          <input
+            type="number"
+            className="w-full bg-surface border border-white/10 rounded-md p-3"
+            value={advanceDeduct}
+            onChange={(e) => setAdvanceDeduct(parseFloat(e.target.value) || 0)}
+          />
+        </div>
+
+        <div className="border border-white/10 rounded-lg p-4 space-y-2 text-sm">
+          <div className="flex justify-between"><span className="opacity-60">Gross value</span><span className="font-mono">NGN {gross.toLocaleString()}</span></div>
+          <div className="flex justify-between"><span className="opacity-60">Quality result</span><span className="font-mono">{resultLabel}</span></div>
+          <div className="flex justify-between"><span className="opacity-60">Quality discount ({pct}%)</span><span className="font-mono text-rust">- NGN {discountValue.toLocaleString()}</span></div>
+          <div className="flex justify-between border-t border-white/10 pt-2"><span className="opacity-60">Net value</span><span className="font-mono">NGN {netValue.toLocaleString()}</span></div>
+          <div className="flex justify-between"><span className="opacity-60">Advance deducted</span><span className="font-mono text-rust">- NGN {deduct.toLocaleString()}</span></div>
+          <div className="flex justify-between border-t border-white/10 pt-2 text-base font-semibold"><span>Final amount payable</span><span className="text-gold font-mono">NGN {finalPay.toLocaleString()}</span></div>
+        </div>
+
+        {error && <p className="text-rust text-sm">{error}</p>}
+
+        <button
+          type="submit"
+          disabled={saving}
+          className="w-full bg-gold text-ink font-semibold rounded-md p-3 disabled:opacity-50"
+        >
+          {saving ? "Saving..." : "Record Purchase & Generate Receipt"}
+        </button>
+      </form>
+
+      {receipt && (
+        <div className="mt-6 bg-[#F8F3E6] text-[#241E15] rounded-lg p-5 font-mono text-sm">
+          <p className="font-semibold text-base mb-1">{profile?.businesses?.name || "Business"}</p>
+          <p className="text-xs opacity-60 mb-3">Purchase Receipt - Powered by TvicGlobal</p>
+          <div className="flex justify-between border-b border-dashed border-black/20 py-1"><span>Farmer</span><span>{receipt.farmerName}</span></div>
+          <div className="flex justify-between border-b border-dashed border-black/20 py-1"><span>Product</span><span>{receipt.productName}</span></div>
+          <div className="flex justify-between border-b border-dashed border-black/20 py-1"><span>Weight</span><span>{receipt.weight_kg} kg</span></div>
+          <div className="flex justify-between border-b border-dashed border-black/20 py-1"><span>Quality</span><span>{receipt.quality_result}</span></div>
+          <div className="flex justify-between border-b border-dashed border-black/20 py-1"><span>Discount</span><span>- NGN {Number(receipt.quality_discount_value).toLocaleString()}</span></div>
+          <div className="flex justify-between border-b border-dashed border-black/20 py-1"><span>Advance deducted</span><span>- NGN {Number(receipt.advance_deducted).toLocaleString()}</span></div>
+          <div className="flex justify-between font-bold pt-2"><span>Final amount paid</span><span>NGN {Number(receipt.final_amount_paid).toLocaleString()}</span></div>
+        </div>
+      )}
+
+      {receipt && (
+        <button onClick={() => window.print()} className="no-print w-full bg-gold text-ink font-semibold rounded-md p-3 mt-3">Download Receipt</button>
+      )}
+      </main>
+    </>
+  );
+}
