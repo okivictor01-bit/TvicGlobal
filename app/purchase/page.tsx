@@ -149,11 +149,18 @@ export default function PurchaseEntry() {
   }
 
   return (
-    <main className="min-h-screen p-8 max-w-lg mx-auto">
-      <p className="font-mono text-xs tracking-widest text-gold uppercase mb-1">TvicGlobal</p>
-      <h1 className="text-2xl font-semibold mb-6">Record a Purchase</h1>
+    <>
+      <style>{`
+        @media print {
+          .no-print { display: none !important; }
+          body { background: white !important; color: black !important; }
+        }
+      `}</style>
+      <main className="min-h-screen p-8 max-w-lg mx-auto">
+        <p className="no-print font-mono text-xs tracking-widest text-gold uppercase mb-1">TvicGlobal</p>
+        <h1 className="no-print text-2xl font-semibold mb-6">Record a Purchase</h1>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="no-print space-y-4">
         {profile?.role === "owner" && branches.length > 1 && (
           <div>
             <label className="text-xs opacity-60 block mb-1">Branch</label>
