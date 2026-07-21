@@ -36,8 +36,8 @@ export async function POST(req: Request) {
 
   // Enforce role rules
   const allowedRoles = callerProfile.role === "owner"
-    ? ["manager", "secretary", "worker"]
-    : ["secretary", "worker"];
+    ? ["manager", "secretary"]
+    : ["secretary"];
   if (!allowedRoles.includes(role)) {
     return NextResponse.json({ error: "You can't assign that role." }, { status: 403 });
   }
