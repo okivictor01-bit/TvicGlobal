@@ -140,6 +140,9 @@ export default function FarmersPage() {
           </li>
         ))}
         {farmers.length === 0 && <p className="text-sm opacity-60">No farmers yet.</p>}
+        {farmers.length > 0 && farmers.filter((f) => f.name.toLowerCase().includes(search.toLowerCase())).length === 0 && (
+          <p className="text-sm opacity-60">No farmers match your search.</p>
+        )}
       </ul>
     </main>
   );
