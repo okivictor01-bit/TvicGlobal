@@ -296,6 +296,11 @@ export default function PurchaseEntry() {
           <div className="flex justify-between font-bold pt-2"><span>Final amount paid</span><span>NGN {Number(receipt.final_amount_paid).toLocaleString()}</span></div>
         </div>
       )}
-    </main>
+
+      {receipt && (
+        <button onClick={() => window.print()} className="no-print w-full bg-gold text-ink font-semibold rounded-md p-3 mt-3">Download Receipt</button>
+      )}
+      </main>
+    </>
   );
 }
