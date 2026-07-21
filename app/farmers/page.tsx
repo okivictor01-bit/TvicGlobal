@@ -107,8 +107,10 @@ export default function FarmersPage() {
       <ul className="space-y-3">
         {farmers.map((f) => (
           <li key={f.id} className="border border-white/10 rounded-lg p-4">
-            <p className="font-semibold">{f.name}</p>
-            <p className="text-xs opacity-60 mb-2">{f.phone} {f.location ? `- ${f.location}` : ""}</p>
+            <a href={`/farmers/${f.id}`} className="block mb-2">
+              <p className="font-semibold text-gold underline">{f.name}</p>
+              <p className="text-xs opacity-60">{f.phone} {f.location ? `- ${f.location}` : ""}</p>
+            </a>
             <p className="text-sm font-mono text-gold mb-2">
               Outstanding: NGN {(balances[f.id] || 0).toLocaleString()}
             </p>
