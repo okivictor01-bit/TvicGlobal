@@ -159,6 +159,9 @@ export default function FarmerDetailPage() {
           <p className="text-sm opacity-60">No transactions with this farmer yet.</p>
         )}
       </ul>
-    </main>
+
+      <button onClick={() => window.print()} className="no-print w-full bg-gold text-ink font-semibold rounded-md p-3 mt-6">Download as PDF</button>
+      </main>
+    </>
   );
 }
