@@ -98,10 +98,18 @@ export default function FarmerDetailPage() {
   }
 
   return (
-    <main className="min-h-screen p-8 max-w-lg mx-auto">
-      <a href="/farmers" className="text-xs text-gold underline mb-4 inline-block">Back to Farmers</a>
+    <>
+      <style>{`
+        @media print {
+          .no-print { display: none !important; }
+          body { background: white !important; color: black !important; }
+          .print-card { border: 1px solid #ccc !important; background: white !important; color: black !important; }
+        }
+      `}</style>
+      <main className="min-h-screen p-8 max-w-lg mx-auto">
+        <a href="/farmers" className="no-print text-xs text-gold underline mb-4 inline-block">Back to Farmers</a>
 
-      <p className="font-mono text-xs tracking-widest text-gold uppercase mb-1">TvicGlobal</p>
+        <p className="font-mono text-xs tracking-widest text-gold uppercase mb-1">TvicGlobal</p>
       <h1 className="text-2xl font-semibold mb-1">{farmer.name}</h1>
       <p className="text-xs opacity-60 mb-4">
         {farmer.phone} {farmer.location ? `- ${farmer.location}` : ""}
