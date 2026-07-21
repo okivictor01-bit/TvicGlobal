@@ -1,21 +1,24 @@
 "use client";
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 
-export default function FarmersPage() {
+export default function FarmerDetailPage() {
   const router = useRouter();
+  const params = useParams();
+  const farmerId = params.id as string;
+
   const [profile, setProfile] = useState<any>(null);
-  const [farmers, setFarmers] = useState<any[]>([]);
-  const [balances, setBalances] = useState<Record<string, number>>({});
-  const [newFarmer, setNewFarmer] = useState({ name: "", phone: "", location: "" });
-  const [advanceAmount, setAdvanceAmount] = useState<Record<string, string>>({});
-  const [error, setError] = useState("");
+  const [farmer, setFarmer] = useState<any>(null);
+  const [transactions, setTransactions] = useState<any[]>([]);
+  const [balance, setBalance] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     load();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [farmerId]);
 
   async function load() {
     const { data: { user } } = await supabase.auth.getUser();
@@ -24,115 +27,141 @@ export default function FarmersPage() {
     if (!prof || prof.role === "super_admin") { router.push("/dashboard"); return; }
     setProfile(prof);
 
-    const { data: farmerList } = await supabase.from("farmers").select("*").order("name");
-    setFarmers(farmerList || []);
+    const { data: farmerData, error: farmerError } = await supabase
+      .from("farmers")
+      .select("*")
+      .eq("id", farmerId)
+      .single();
+    if (farmerError || !farmerData) {
+      setError("Farmer not found.");
+      setLoading(false);
+      return;
+    }
+    setFarmer(farmerData);
 
-    const { data: advancesData } = await supabase.from("advances").select("farmer_id, amount");
-    const { data: purchasesData } = await supabase.from("purchases").select("farmer_id, advance_deducted");
+    const { data: purchases } = await supabase
+      .from("purchases")
+      .select("*, products(name)")
+      .eq("farmer_id", farmerId)
+      .order("created_at", { ascending: false });
 
-    const bal: Record<string, number> = {};
-    (advancesData || []).forEach((a: any) => {
-      bal[a.farmer_id] = (bal[a.farmer_id] || 0) + Number(a.amount);
-    });
-    (purchasesData || []).forEach((p: any) => {
-      bal[p.farmer_id] = (bal[p.farmer_id] || 0) - Number(p.advance_deducted || 0);
-    });
-    setBalances(bal);
+    const { data: advances } = await supabase
+      .from("advances")
+      .select("*")
+      .eq("farmer_id", farmerId)
+      .order("created_at", { ascending: false });
+
+    const purchaseRows = (purchases || []).map((p: any) => ({
+      type: "purchase" as const,
+      id: p.id,
+      created_at: p.created_at,
+      productName: p.products?.name || "Unknown",
+      weight_kg: p.weight_kg,
+      price_per_kg: p.price_per_kg,
+      quality_result: p.quality_result,
+      net_value: p.net_value,
+      advance_deducted: p.advance_deducted,
+      final_amount_paid: p.final_amount_paid,
+    }));
+
+    const advanceRows = (advances || []).map((a: any) => ({
+      type: "advance" as const,
+      id: a.id,
+      created_at: a.created_at,
+      amount: a.amount,
+    }));
+
+    const combined = [...purchaseRows, ...advanceRows].sort(
+      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
+    setTransactions(combined);
+
+    const totalAdvances = (advances || []).reduce((sum: number, a: any) => sum + Number(a.amount), 0);
+    const totalDeducted = (purchases || []).reduce(
+      (sum: number, p: any) => sum + Number(p.advance_deducted || 0),
+      0
+    );
+    setBalance(totalAdvances - totalDeducted);
+
     setLoading(false);
-  }
-
-  async function handleAddFarmer(e: React.FormEvent) {
-    e.preventDefault();
-    setError("");
-    const { error: insertError } = await supabase.from("farmers").insert({
-      business_id: profile.business_id,
-      name: newFarmer.name,
-      phone: newFarmer.phone,
-      location: newFarmer.location,
-    });
-    if (insertError) { setError(insertError.message); return; }
-    setNewFarmer({ name: "", phone: "", location: "" });
-    load();
-  }
-
-  async function handleGiveAdvance(farmerId: string) {
-    const amount = parseFloat(advanceAmount[farmerId] || "0");
-    if (!amount || amount <= 0) return;
-    const { error: insertError } = await supabase.from("advances").insert({
-      business_id: profile.business_id,
-      branch_id: profile.branch_id,
-      farmer_id: farmerId,
-      amount,
-      issued_by: profile.id,
-    });
-    if (insertError) { setError(insertError.message); return; }
-    setAdvanceAmount((prev) => ({ ...prev, [farmerId]: "" }));
-    load();
   }
 
   if (loading) return <main className="min-h-screen flex items-center justify-center">Loading...</main>;
 
+  if (error) {
+    return (
+      <main className="min-h-screen p-8 max-w-lg mx-auto text-center">
+        <p className="text-rust text-sm mb-4">{error}</p>
+        <a href="/farmers" className="text-gold underline text-sm">Back to Farmers</a>
+      </main>
+    );
+  }
+
   return (
-    <main className="min-h-screen p-8 max-w-lg mx-auto">
-      <p className="font-mono text-xs tracking-widest text-gold uppercase mb-1">TvicGlobal</p>
-      <h1 className="text-2xl font-semibold mb-6">Farmers</h1>
+    <>
+      <style>{`
+        @media print {
+          .no-print { display: none !important; }
+          body { background: white !important; color: black !important; }
+          .print-card { border: 1px solid #ccc !important; background: white !important; color: black !important; }
+        }
+      `}</style>
+      <main className="min-h-screen p-8 max-w-lg mx-auto">
+        <a href="/farmers" className="no-print text-xs text-gold underline mb-4 inline-block">Back to Farmers</a>
 
-      <form onSubmit={handleAddFarmer} className="space-y-3 mb-8 border border-white/10 rounded-lg p-4">
-        <p className="text-sm font-semibold mb-1">Add Farmer</p>
-        <input
-          placeholder="Full name"
-          className="w-full bg-surface border border-white/10 rounded-md p-2 text-sm"
-          value={newFarmer.name}
-          onChange={(e) => setNewFarmer({ ...newFarmer, name: e.target.value })}
-          required
-        />
-        <input
-          placeholder="Phone"
-          className="w-full bg-surface border border-white/10 rounded-md p-2 text-sm"
-          value={newFarmer.phone}
-          onChange={(e) => setNewFarmer({ ...newFarmer, phone: e.target.value })}
-        />
-        <input
-          placeholder="Location"
-          className="w-full bg-surface border border-white/10 rounded-md p-2 text-sm"
-          value={newFarmer.location}
-          onChange={(e) => setNewFarmer({ ...newFarmer, location: e.target.value })}
-        />
-        {error && <p className="text-rust text-sm">{error}</p>}
-        <button type="submit" className="bg-gold text-ink font-semibold rounded-md px-4 py-2 text-sm">
-          Add Farmer
-        </button>
-      </form>
+        <p className="font-mono text-xs tracking-widest text-gold uppercase mb-1">TvicGlobal</p>
+        <h1 className="text-2xl font-semibold mb-1">{farmer.name}</h1>
+        <p className="text-xs opacity-60 mb-4">
+          {farmer.phone} {farmer.location ? `- ${farmer.location}` : ""}
+        </p>
 
-      <ul className="space-y-3">
-        {farmers.map((f) => (
-          <li key={f.id} className="border border-white/10 rounded-lg p-4">
-            <a href={`/farmers/${f.id}`} className="block mb-2">
-              <p className="font-semibold text-gold underline">{f.name}</p>
-              <p className="text-xs opacity-60">{f.phone} {f.location ? `- ${f.location}` : ""}</p>
-            </a>
-            <p className="text-sm font-mono text-gold mb-2">
-              Outstanding: NGN {(balances[f.id] || 0).toLocaleString()}
-            </p>
-            <div className="flex gap-2">
-              <input
-                type="number"
-                placeholder="Advance amount"
-                className="flex-1 bg-surface border border-white/10 rounded-md p-2 text-sm"
-                value={advanceAmount[f.id] || ""}
-                onChange={(e) => setAdvanceAmount((prev) => ({ ...prev, [f.id]: e.target.value }))}
-              />
-              <button
-                onClick={() => handleGiveAdvance(f.id)}
-                className="text-xs border border-white/10 rounded-md px-3 py-2"
-              >
-                Give Advance
-              </button>
-            </div>
-          </li>
-        ))}
-        {farmers.length === 0 && <p className="text-sm opacity-60">No farmers yet.</p>}
-      </ul>
-    </main>
+        <div className="print-card border border-white/10 rounded-lg p-4 mb-8">
+          <p className="text-xs opacity-60 mb-1">Outstanding Advance Balance</p>
+          <p className="text-xl font-mono text-gold">NGN {balance.toLocaleString()}</p>
+        </div>
+
+        <p className="text-sm font-semibold mb-3">Transaction History</p>
+        <ul className="space-y-3">
+          {transactions.map((t) => (
+            <li key={`${t.type}-${t.id}`} className="print-card border border-white/10 rounded-lg p-4">
+              {t.type === "advance" ? (
+                <>
+                  <p className="text-xs text-olive uppercase tracking-wide mb-1">Advance Given</p>
+                  <p className="font-mono text-sm mb-1">NGN {Number(t.amount).toLocaleString()}</p>
+                </>
+              ) : (
+                <>
+                  <p className="text-xs text-gold uppercase tracking-wide mb-1">Purchase</p>
+                  <p className="text-sm mb-1">
+                    {t.productName} - {Number(t.weight_kg).toLocaleString()} kg @ NGN{" "}
+                    {Number(t.price_per_kg).toLocaleString()}/kg
+                  </p>
+                  <p className="text-xs opacity-60 mb-1">Quality: {t.quality_result}</p>
+                  <p className="text-xs opacity-60 mb-1">
+                    Net value: NGN {Number(t.net_value).toLocaleString()}
+                  </p>
+                  {Number(t.advance_deducted) > 0 && (
+                    <p className="text-xs opacity-60 mb-1">
+                      Advance deducted: NGN {Number(t.advance_deducted).toLocaleString()}
+                    </p>
+                  )}
+                  <p className="font-mono text-sm text-gold">
+                    Paid: NGN {Number(t.final_amount_paid).toLocaleString()}
+                  </p>
+                </>
+              )}
+              <p className="text-xs opacity-40 mt-2">
+                {new Date(t.created_at).toLocaleDateString()} {new Date(t.created_at).toLocaleTimeString()}
+              </p>
+            </li>
+          ))}
+          {transactions.length === 0 && (
+            <p className="text-sm opacity-60">No transactions with this farmer yet.</p>
+          )}
+        </ul>
+
+        <button onClick={() => window.print()} className="no-print w-full bg-gold text-ink font-semibold rounded-md p-3 mt-6">Download as PDF</button>
+      </main>
+    </>
   );
 }
