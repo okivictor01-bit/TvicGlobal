@@ -65,8 +65,8 @@ export default function InviteStaff() {
   if (!profile) return <main className="min-h-screen flex items-center justify-center">Loading...</main>;
 
   const roleOptions = profile.role === "owner"
-    ? ["manager", "secretary", "worker"]
-    : ["secretary", "worker"];
+    ? ["manager", "secretary"]
+    : ["secretary"];
 
   return (
     <main className="min-h-screen p-8 max-w-sm mx-auto">
