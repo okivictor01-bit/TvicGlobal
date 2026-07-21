@@ -168,7 +168,7 @@ export default function Dashboard() {
               className="block border border-white/10 rounded-lg p-4 hover:border-gold transition-colors"
             >
               <p className="font-semibold text-sm">+ Invite Staff</p>
-              <p className="text-xs opacity-60">Create a manager, secretary, or worker account</p>
+              <p className="text-xs opacity-60">Create a manager or secretary account</p>
             </a>
           </>
         )}
