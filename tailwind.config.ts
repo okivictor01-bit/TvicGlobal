@@ -6,11 +6,11 @@ const config: Config = {
     extend: {
       colors: {
         ink: "#14110F",
-        surface: "#1D1913",
+        surface: "#F1ECDD",
         gold: "#C9A227",
         olive: "#7A9A54",
         rust: "#B85C38",
-        ivory: "#F1EAD9",
+        ivory: "#2A2318",
       },
     },
   },
