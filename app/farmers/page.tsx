@@ -105,8 +105,15 @@ export default function FarmersPage() {
         </button>
       </form>
 
+      <input
+        placeholder="Search farmers by name"
+        className="w-full bg-surface border border-white/10 rounded-md p-3 text-sm mb-4"
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+      />
+
       <ul className="space-y-3">
-        {farmers.map((f) => (
+        {farmers.filter((f) => f.name.toLowerCase().includes(search.toLowerCase())).map((f) => (
           <li key={f.id} className="border border-white/10 rounded-lg p-4">
             <a href={`/farmers/${f.id}`} className="block mb-2">
               <p className="font-semibold text-gold underline">{f.name}</p>
