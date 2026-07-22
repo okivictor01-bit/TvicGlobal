@@ -1,2 +1,0 @@
-# TvicGlobal
-Accounting platform 
