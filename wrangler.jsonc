@@ -9,6 +9,6 @@
     "directory": ".open-next/assets"
   },
   "observability": {
-    "enabled": true
+    "enabled":  true
   }
 }
