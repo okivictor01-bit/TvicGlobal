@@ -13,6 +13,8 @@ export default function FarmersPage() {
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
+  const [branches, setBranches] = useState<any[]>([]);
+  const [branchFilter, setBranchFilter] = useState<string>("all");
 
   useEffect(() => {
     load();
@@ -31,6 +33,11 @@ export default function FarmersPage() {
     }
     const { data: farmerList } = await farmerQuery;
     setFarmers(farmerList || []);
+
+    if (prof.role === "owner") {
+      const { data: branchList } = await supabase.from("branches").select("*").order("name");
+      setBranches(branchList || []);
+    }
 
     const { data: advancesData } = await supabase.from("advances").select("farmer_id, amount");
     const { data: purchasesData } = await supabase.from("purchases").select("farmer_id, advance_deducted");
@@ -117,8 +124,24 @@ export default function FarmersPage() {
         onChange={(e) => setSearch(e.target.value)}
       />
 
+      {profile?.role === "owner" && branches.length > 0 && (
+        <select
+          className="w-full bg-surface border border-white/10 rounded-md p-3 text-sm mb-4"
+          value={branchFilter}
+          onChange={(e) => setBranchFilter(e.target.value)}
+        >
+          <option value="all">All branches</option>
+          {branches.map((b) => (
+            <option key={b.id} value={b.id}>{b.name}</option>
+          ))}
+        </select>
+      )}
+
       <ul className="space-y-3">
-        {farmers.filter((f) => f.name.toLowerCase().includes(search.toLowerCase())).map((f) => (
+        {farmers
+          .filter((f) => f.name.toLowerCase().includes(search.toLowerCase()))
+          .filter((f) => branchFilter === "all" || f.branch_id === branchFilter)
+          .map((f) => (
           <li key={f.id} className="border border-white/10 rounded-lg p-4">
             <a href={`/farmers/${f.id}`} className="block mb-2">
               <p className="font-semibold text-gold underline">{f.name}</p>
@@ -145,9 +168,12 @@ export default function FarmersPage() {
           </li>
         ))}
         {farmers.length === 0 && <p className="text-sm opacity-60">No farmers yet.</p>}
-        {farmers.length > 0 && farmers.filter((f) => f.name.toLowerCase().includes(search.toLowerCase())).length === 0 && (
-          <p className="text-sm opacity-60">No farmers match your search.</p>
-        )}
+        {farmers.length > 0 &&
+          farmers
+            .filter((f) => f.name.toLowerCase().includes(search.toLowerCase()))
+            .filter((f) => branchFilter === "all" || f.branch_id === branchFilter).length === 0 && (
+            <p className="text-sm opacity-60">No farmers match your search or branch filter.</p>
+          )}
       </ul>
     </main>
   );
