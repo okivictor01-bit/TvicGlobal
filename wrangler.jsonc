@@ -9,7 +9,7 @@
     "directory": ".open-next/assets"
   },
   "observability": {
-    "enabled":  true
+    "enabled": true
   },
   "vars": {
     "NEXT_PUBLIC_APP_URL": "https://agrobuyer.store",
