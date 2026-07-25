@@ -10,5 +10,10 @@
   },
   "observability": {
     "enabled": true
+  },
+  "vars": {
+    "NEXT_PUBLIC_APP_URL": "https://agrobuyer.store",
+    "NEXT_PUBLIC_SUPABASE_URL": "https://jderopqrrvydhaancvzm.supabase.co",
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpkZXJvcHFycnZ5ZGhhYW5jdnptIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ0MDU5NjMsImV4cCI6MjA5OTk4MTk2M30.ik5T41NbbSUy-gnLF7Psnt0wLfPaFgij141aFHA6aZk"
   }
 }
