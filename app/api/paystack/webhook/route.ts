@@ -4,7 +4,7 @@ import { verifyAndApply } from "@/lib/paystackServer";
 
 // Configure this exact URL in the Paystack dashboard:
 // Settings -> API Keys & Webhooks -> Webhook URL
-//   https://tvic-global.vercel.app/api/paystack/webhook
+//   https://agrobuyer.okivictor01.workers.dev/api/paystack/webhook
 export async function POST(req: Request) {
   const rawBody = await req.text();
   const signature = req.headers.get("x-paystack-signature");
