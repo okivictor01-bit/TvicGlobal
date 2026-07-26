@@ -11,7 +11,7 @@ function generateReferralCode(name: string) {
 }
 
 export async function POST(req: Request) {
-  const { fullName, email, phone, password, bankCode, accountNumber, accountName } = await req.json();
+  const { fullName, email, phone, password, bankCode, bankName, accountNumber, accountName } = await req.json();
 
   if (!fullName || !email || !password || !bankCode || !accountNumber || !accountName) {
     return NextResponse.json({ error: "All fields are required." }, { status: 400 });
@@ -67,6 +67,7 @@ export async function POST(req: Request) {
         phone: phone || null,
         referral_code: referralCode,
         bank_code: bankCode,
+        bank_name: bankName || null,
         account_number: accountNumber,
         account_name: accountName,
         paystack_recipient_code: recipientData.data.recipient_code,

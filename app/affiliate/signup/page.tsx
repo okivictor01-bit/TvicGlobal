@@ -54,10 +54,11 @@ export default function AffiliateSignup() {
     }
 
     setLoading(true);
+    const selectedBank = banks.find((b) => b.code === form.bankCode);
     const res = await fetch("/api/affiliate/signup", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...form, accountName }),
+      body: JSON.stringify({ ...form, accountName, bankName: selectedBank?.name || "" }),
     });
     const result = await res.json();
 

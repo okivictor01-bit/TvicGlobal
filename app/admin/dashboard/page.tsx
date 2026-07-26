@@ -13,7 +13,7 @@ export default function AdminDashboard() {
   async function loadCommissions() {
     const { data } = await supabase
       .from("affiliate_commissions")
-      .select("*, affiliates(full_name, email), businesses(name)")
+      .select("*, affiliates(full_name, email, bank_name, bank_code, account_number, account_name), businesses(name)")
       .order("created_at", { ascending: false });
     setCommissions(data || []);
   }
@@ -90,7 +90,16 @@ export default function AdminDashboard() {
           <li key={c.id} className="border border-white/10 rounded-lg p-4">
             <p className="font-semibold">{c.affiliates?.full_name || "Unknown affiliate"}</p>
             <p className="text-xs opacity-60">{c.affiliates?.email}</p>
-            <p className="text-sm mt-1">
+            {c.affiliates?.account_number && (
+              <div className="bg-ink/5 border border-white/10 rounded-md p-2 mt-2">
+                <p className="text-xs uppercase tracking-widest opacity-60 mb-1">Payout account</p>
+                <p className="text-sm">{c.affiliates.account_name}</p>
+                <p className="text-sm opacity-80">
+                  {c.affiliates.account_number} · {c.affiliates.bank_name || c.affiliates.bank_code}
+                </p>
+              </div>
+            )}
+            <p className="text-sm mt-2">
               Referred: <span className="font-medium">{c.businesses?.name || "Unknown business"}</span>
             </p>
             <p className="text-sm mt-1">
