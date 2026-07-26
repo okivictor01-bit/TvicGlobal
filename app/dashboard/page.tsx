@@ -173,6 +173,16 @@ export default function Dashboard() {
           </>
         )}
 
+        {(profile?.role === "owner" || profile?.role === "manager") && (
+          <a
+            href="/finance"
+            className="block border border-white/10 rounded-lg p-4 hover:border-gold transition-colors"
+          >
+            <p className="font-semibold text-sm">Finance</p>
+            <p className="text-xs opacity-60">Cash available, profit, cash book, expenses</p>
+          </a>
+        )}
+
         {profile?.role === "owner" && (
           <a
             href="/billing"
