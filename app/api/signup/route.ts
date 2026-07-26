@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 export async function POST(req: Request) {
-  const { businessName, ownerName, email, password } = await req.json();
+  const { businessName, ownerName, email, password, referralCode } = await req.json();
 
   if (!businessName || !ownerName || !email || !password) {
     return NextResponse.json({ error: "All fields are required." }, { status: 400 });
@@ -13,6 +13,18 @@ export async function POST(req: Request) {
     .trim()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-|-$)/g, "");
+
+  // 0. If a referral code was passed in, look up the affiliate (silently
+  // ignore an invalid/unknown code rather than blocking signup over it)
+  let referredByAffiliateId: string | null = null;
+  if (referralCode) {
+    const { data: affiliate } = await supabaseAdmin
+      .from("affiliates")
+      .select("id")
+      .eq("referral_code", referralCode)
+      .single();
+    referredByAffiliateId = affiliate?.id || null;
+  }
 
   // 1. Create the auth user
   const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
@@ -28,7 +40,13 @@ export async function POST(req: Request) {
   const trialEndsAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
   const { data: business, error: bizError } = await supabaseAdmin
     .from("businesses")
-    .insert({ name: businessName, slug, subscription_status: "trial", trial_ends_at: trialEndsAt })
+    .insert({
+      name: businessName,
+      slug,
+      subscription_status: "trial",
+      trial_ends_at: trialEndsAt,
+      referred_by_affiliate_id: referredByAffiliateId,
+    })
     .select()
     .single();
   if (bizError) {

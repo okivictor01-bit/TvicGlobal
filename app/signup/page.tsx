@@ -1,10 +1,20 @@
 "use client";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 
 export default function Signup() {
+  return (
+    <Suspense fallback={<main className="min-h-screen flex items-center justify-center">Loading...</main>}>
+      <SignupForm />
+    </Suspense>
+  );
+}
+
+function SignupForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const referralCode = searchParams.get("ref");
   const [form, setForm] = useState({
     businessName: "", ownerName: "", email: "", password: "",
   });
@@ -19,7 +29,7 @@ export default function Signup() {
     const res = await fetch("/api/signup", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
+      body: JSON.stringify({ ...form, referralCode }),
     });
     const result = await res.json();
 
