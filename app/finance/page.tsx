@@ -110,6 +110,7 @@ export default function Finance() {
     setSavingCash(true);
     const { error: insertError } = await supabase.from("cash_adjustments").insert({
       business_id: profile.business_id,
+      branch_id: profile.role === "manager" ? profile.branch_id : null,
       type: cashForm.type,
       amount,
       description: cashForm.description || null,
@@ -134,14 +135,19 @@ export default function Finance() {
   const totalAdvances = advances.filter(inBranch).reduce((sum, r) => sum + Number(r.amount || 0), 0);
   const totalExpenses = expenses.filter(inBranch).reduce((sum, r) => sum + Number(r.amount || 0), 0);
 
-  // Cash injections/withdrawals are business-wide (not tied to a branch),
-  // so they only factor into Cash Available when viewing "All branches".
-  const totalInjections = isAllBranches
-    ? cashAdjustments.filter((c) => c.type === "injection").reduce((sum, r) => sum + Number(r.amount), 0)
-    : 0;
-  const totalWithdrawals = isAllBranches
-    ? cashAdjustments.filter((c) => c.type === "withdrawal").reduce((sum, r) => sum + Number(r.amount), 0)
-    : 0;
+  // Owner entries are business-wide (branch_id null); manager entries are
+  // scoped to their branch. In "All branches" view, everything counts. In a
+  // specific-branch view, only that branch's own entries count (a
+  // business-wide owner injection isn't attributed to any single branch).
+  const inAdjustmentBranch = (row: any) => isAllBranches || row.branch_id === branchFilter;
+  const totalInjections = cashAdjustments
+    .filter((c) => c.type === "injection")
+    .filter(inAdjustmentBranch)
+    .reduce((sum, r) => sum + Number(r.amount), 0);
+  const totalWithdrawals = cashAdjustments
+    .filter((c) => c.type === "withdrawal")
+    .filter(inAdjustmentBranch)
+    .reduce((sum, r) => sum + Number(r.amount), 0);
 
   const profit = totalSales - totalPurchases - totalExpenses;
   const cashAvailable = totalInjections - totalWithdrawals + totalSales - totalPurchases - totalAdvances - totalExpenses;
@@ -162,16 +168,14 @@ export default function Finance() {
   expenses.filter(inBranch).forEach((e) =>
     rows.push({ date: e.created_at, description: `Expense: ${e.category}${e.description ? ` (${e.description})` : ""}`, moneyIn: 0, moneyOut: Number(e.amount) })
   );
-  if (isAllBranches) {
-    cashAdjustments.forEach((c) =>
-      rows.push({
-        date: c.created_at,
-        description: c.type === "injection" ? `Cash injection${c.description ? ` (${c.description})` : ""}` : `Cash withdrawal${c.description ? ` (${c.description})` : ""}`,
-        moneyIn: c.type === "injection" ? Number(c.amount) : 0,
-        moneyOut: c.type === "withdrawal" ? Number(c.amount) : 0,
-      })
-    );
-  }
+  cashAdjustments.filter(inAdjustmentBranch).forEach((c) =>
+    rows.push({
+      date: c.created_at,
+      description: c.type === "injection" ? `Cash injection${c.description ? ` (${c.description})` : ""}` : `Cash withdrawal${c.description ? ` (${c.description})` : ""}`,
+      moneyIn: c.type === "injection" ? Number(c.amount) : 0,
+      moneyOut: c.type === "withdrawal" ? Number(c.amount) : 0,
+    })
+  );
 
   rows.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   let running = 0;
@@ -199,7 +203,7 @@ export default function Finance() {
       )}
       {!isAllBranches && (
         <p className="text-xs opacity-50 mb-4">
-          Cash injections/withdrawals are business-wide and only appear in the "All branches" view.
+          Business-wide cash injections/withdrawals (recorded by the owner) only appear in the "All branches" view. This branch's own entries are included here.
         </p>
       )}
 
@@ -272,9 +276,14 @@ export default function Finance() {
         </form>
       </div>
 
-      {profile.role === "owner" && (
+      {(profile.role === "owner" || profile.role === "manager") && (
         <div className="bg-surface border border-white/10 rounded-md p-4 mb-6">
           <p className="text-sm font-semibold mb-3">Record a cash injection / withdrawal</p>
+          {profile.role === "manager" && (
+            <p className="text-xs opacity-50 mb-3">
+              This will only affect your branch's cash figures.
+            </p>
+          )}
           <form onSubmit={handleCashAdjustment} className="space-y-3">
             <select
               className="w-full bg-transparent border border-white/10 rounded-md p-2 text-sm"
