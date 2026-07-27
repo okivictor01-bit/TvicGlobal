@@ -204,12 +204,20 @@ export default function Dashboard() {
         )}
       </nav>
 
-      <button
-        onClick={handleLogout}
-        className="text-sm border border-white/10 rounded-md px-4 py-2"
-      >
-        Log out
-      </button>
+      <div className="flex gap-3">
+        <a
+          href="/reset-password"
+          className="text-sm border border-white/10 rounded-md px-4 py-2"
+        >
+          Change Password
+        </a>
+        <button
+          onClick={handleLogout}
+          className="text-sm border border-white/10 rounded-md px-4 py-2"
+        >
+          Log out
+        </button>
+      </div>
     </main>
   );
 }
