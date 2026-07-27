@@ -2,7 +2,7 @@ export default function Home() {
   return (
     <>
       <main
-        className="min-h-screen flex flex-col items-center justify-center p-6 text-center bg-cover bg-center"
+        className="min-h-[50vh] flex flex-col items-center justify-center p-6 text-center bg-cover bg-center"
         style={{ backgroundImage: "linear-gradient(rgba(20,17,15,0.80), rgba(20,17,15,0.85)), url('/hero.jpg')" }}
       >
         <img src="/agrobuyer-icon.svg" alt="Agrobuyer" width="64" height="64" className="mb-4" />
