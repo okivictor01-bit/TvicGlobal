@@ -12,23 +12,9 @@ export default function Home() {
         <h1 className="text-3xl font-semibold mb-4 max-w-md text-[#F1EAD9]">
           Stop Losing Money to Manual Records. Manage Every Kilogram, Every Payment, Every Profit in One Place.
         </h1>
-        <p className="text-sm max-w-sm mb-10 text-[#F1EAD9] opacity-80">
+        <p className="text-sm max-w-sm text-[#F1EAD9] opacity-80">
           The complete farm produce procurement and accounting system that automates farmer advances, weight-based purchases, quality deductions, inventory, exporter sales, and financial reporting—giving you accurate records, faster operations, and total control over your business.
         </p>
-
-        <div className="w-full max-w-xs space-y-3">
-          <a href="/login" className="block w-full bg-gold text-ink font-semibold rounded-md p-3">
-            Log In
-          </a>
-          <a href="/signup" className="block w-full border border-[#F1EAD9]/40 text-[#F1EAD9] rounded-md p-3">
-            Sign Up
-          </a>
-        </div>
-
-        <div className="flex gap-4 mt-10 text-xs text-[#F1EAD9] opacity-70">
-          <a href="/faq" className="underline">FAQ</a>
-          <a href="/contact" className="underline">Contact</a>
-        </div>
       </main>
 
       <section className="bg-ink px-6 py-16">
@@ -50,6 +36,20 @@ export default function Home() {
           <p className="opacity-90 leading-relaxed">
             Make smarter decisions, build trust with customers/farmers, and grow your business with a modern solution designed specifically for agricultural produce trading.
           </p>
+
+          <div className="w-full max-w-xs mx-auto space-y-3 pt-4">
+            <a href="/login" className="block w-full bg-gold text-ink font-semibold rounded-md p-3 text-center">
+              Log In
+            </a>
+            <a href="/signup" className="block w-full border border-[#F1EAD9]/40 text-[#F1EAD9] rounded-md p-3 text-center">
+              Sign Up
+            </a>
+          </div>
+
+          <div className="flex gap-4 justify-center pt-4 text-xs text-[#F1EAD9] opacity-70">
+            <a href="/faq" className="underline">FAQ</a>
+            <a href="/contact" className="underline">Contact</a>
+          </div>
         </div>
       </section>
     </>
