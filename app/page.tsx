@@ -12,7 +12,7 @@ export default function Home() {
         Run your produce buying business from your phone
       </h1>
       <p className="text-sm max-w-sm mb-10 text-[#F1EAD9] opacity-80">
-        Multi-branch purchasing, farmer advances, inventory, and sales to
+        Multi-branch purchasing, customer advances, inventory, and sales to
         exporters — all in one place, with a receipt for every transaction.
       </p>
 

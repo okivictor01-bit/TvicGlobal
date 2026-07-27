@@ -1,7 +1,7 @@
 const faqs = [
   {
     q: "What is Agrobuyer?",
-    a: "Agrobuyer is a platform for produce buying businesses. It handles farmer purchases with quality-adjusted pricing, farmer advances, multi-branch operations, inventory, and sales to exporters, with a digital receipt generated for every purchase.",
+    a: "Agrobuyer is a platform for produce buying businesses. It handles customer purchases with quality-adjusted pricing, customer advances, multi-branch operations, inventory, and sales to exporters, with a digital receipt generated for every purchase.",
   },
   {
     q: "How does the free trial work?",
@@ -25,7 +25,7 @@ const faqs = [
   },
   {
     q: "What is the difference between owner, manager, secretary, and worker roles?",
-    a: "The owner has full access, including billing, branches, staff, and reports. Managers oversee their branch, including staff and inventory. Secretaries record purchases and manage farmers. Worker access is limited to day-to-day recording tasks assigned by a manager.",
+    a: "The owner has full access, including billing, branches, staff, and reports. Managers oversee their branch, including staff and inventory. Secretaries record purchases and manage customers. Worker access is limited to day-to-day recording tasks assigned by a manager.",
   },
   {
     q: "Is my business data private?",

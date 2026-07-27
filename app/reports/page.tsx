@@ -183,7 +183,7 @@ export default function ReportsPage() {
               <p className="font-mono text-lg">{avgDiscountPct.toFixed(1)}%</p>
             </div>
             <div>
-              <p className="opacity-60 text-xs mb-1">Total Paid to Farmers</p>
+              <p className="opacity-60 text-xs mb-1">Total Paid to Customers</p>
               <p className="font-mono text-lg">NGN {totals.finalPaid.toLocaleString()}</p>
             </div>
             <div>

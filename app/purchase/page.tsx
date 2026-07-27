@@ -140,8 +140,8 @@ export default function PurchaseEntry() {
   if (farmers.length === 0) {
     return (
       <main className="min-h-screen p-8 max-w-md mx-auto">
-        <p className="text-sm opacity-70 mb-4">You need at least one farmer before recording a purchase.</p>
-        <a href="/farmers" className="text-gold underline text-sm">+ Add a farmer</a>
+        <p className="text-sm opacity-70 mb-4">You need at least one customer before recording a purchase.</p>
+        <a href="/farmers" className="text-gold underline text-sm">+ Add a customer</a>
       </main>
     );
   }
@@ -178,7 +178,7 @@ export default function PurchaseEntry() {
           </div>
         )}
         <div>
-          <label className="text-xs opacity-60 block mb-1">Farmer</label>
+          <label className="text-xs opacity-60 block mb-1">Customer</label>
           <select
             className="w-full bg-surface border border-white/10 rounded-md p-3"
             value={farmerId}
@@ -189,7 +189,7 @@ export default function PurchaseEntry() {
             ))}
           </select>
           {farmersForBranch.length === 0 && (
-            <p className="text-xs text-rust mt-1">No farmers registered at this branch yet.</p>
+            <p className="text-xs text-rust mt-1">No customers registered at this branch yet.</p>
           )}
           <p className="text-xs opacity-60 mt-1">Outstanding advance: NGN {farmerBalance.toLocaleString()}</p>
         </div>
@@ -302,7 +302,7 @@ export default function PurchaseEntry() {
         <div className="mt-6 bg-[#F8F3E6] text-[#241E15] rounded-lg p-5 font-mono text-sm">
           <p className="font-semibold text-base mb-1">{profile?.businesses?.name || "Business"}</p>
           <p className="text-xs opacity-60 mb-3">Purchase Receipt - Powered by Agrobuyer</p>
-          <div className="flex justify-between border-b border-dashed border-black/20 py-1"><span>Farmer</span><span>{receipt.farmerName}</span></div>
+          <div className="flex justify-between border-b border-dashed border-black/20 py-1"><span>Customer</span><span>{receipt.farmerName}</span></div>
           <div className="flex justify-between border-b border-dashed border-black/20 py-1"><span>Product</span><span>{receipt.productName}</span></div>
           <div className="flex justify-between border-b border-dashed border-black/20 py-1"><span>Weight</span><span>{receipt.weight_kg} kg</span></div>
           <div className="flex justify-between border-b border-dashed border-black/20 py-1"><span>Quality</span><span>{receipt.quality_result}</span></div>

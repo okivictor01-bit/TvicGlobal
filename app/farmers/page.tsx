@@ -88,10 +88,10 @@ export default function FarmersPage() {
   return (
     <main className="min-h-screen p-8 max-w-lg mx-auto">
       <p className="font-mono text-xs tracking-widest text-gold uppercase mb-1">Agrobuyer</p>
-      <h1 className="text-2xl font-semibold mb-6">Farmers</h1>
+      <h1 className="text-2xl font-semibold mb-6">Customers</h1>
 
       <form onSubmit={handleAddFarmer} className="space-y-3 mb-8 border border-white/10 rounded-lg p-4">
-        <p className="text-sm font-semibold mb-1">Add Farmer</p>
+        <p className="text-sm font-semibold mb-1">Add Customer</p>
         <input
           placeholder="Full name"
           className="w-full bg-surface border border-white/10 rounded-md p-2 text-sm"
@@ -113,12 +113,12 @@ export default function FarmersPage() {
         />
         {error && <p className="text-rust text-sm">{error}</p>}
         <button type="submit" className="bg-gold text-ink font-semibold rounded-md px-4 py-2 text-sm">
-          Add Farmer
+          Add Customer
         </button>
       </form>
 
       <input
-        placeholder="Search farmers by name"
+        placeholder="Search customers by name"
         className="w-full bg-surface border border-white/10 rounded-md p-3 text-sm mb-4"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
@@ -167,12 +167,12 @@ export default function FarmersPage() {
             </div>
           </li>
         ))}
-        {farmers.length === 0 && <p className="text-sm opacity-60">No farmers yet.</p>}
+        {farmers.length === 0 && <p className="text-sm opacity-60">No customers yet.</p>}
         {farmers.length > 0 &&
           farmers
             .filter((f) => f.name.toLowerCase().includes(search.toLowerCase()))
             .filter((f) => branchFilter === "all" || f.branch_id === branchFilter).length === 0 && (
-            <p className="text-sm opacity-60">No farmers match your search or branch filter.</p>
+            <p className="text-sm opacity-60">No customers match your search or branch filter.</p>
           )}
       </ul>
 

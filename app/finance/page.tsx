@@ -19,7 +19,6 @@ export default function Finance() {
   const router = useRouter();
   const [profile, setProfile] = useState<any>(null);
   const [branches, setBranches] = useState<any[]>([]);
-  const [branchFilter, setBranchFilter] = useState<string>("all");
   const [purchases, setPurchases] = useState<any[]>([]);
   const [sales, setSales] = useState<any[]>([]);
   const [advances, setAdvances] = useState<any[]>([]);
@@ -130,19 +129,17 @@ export default function Finance() {
 
   if (loading) return <main className="min-h-screen flex items-center justify-center">Loading...</main>;
 
-  const isAllBranches = branchFilter === "all";
-  const inBranch = (row: any) => isAllBranches || row.branch_id === branchFilter;
+  const isAllBranches = true;
+  const inBranch = (_row: any) => true;
 
   const totalPurchases = purchases.filter(inBranch).reduce((sum, r) => sum + Number(r.final_amount_paid || 0), 0);
   const totalSales = sales.filter(inBranch).reduce((sum, r) => sum + Number(r.total_value || 0), 0);
   const totalAdvances = advances.filter(inBranch).reduce((sum, r) => sum + Number(r.amount || 0), 0);
   const totalExpenses = expenses.filter(inBranch).reduce((sum, r) => sum + Number(r.amount || 0), 0);
 
-  // Owner entries are business-wide (branch_id null); manager entries are
-  // scoped to their branch. In "All branches" view, everything counts. In a
-  // specific-branch view, only that branch's own entries count (a
-  // business-wide owner injection isn't attributed to any single branch).
-  const inAdjustmentBranch = (row: any) => isAllBranches || row.branch_id === branchFilter;
+  // Finance is always business-wide now -- includes every branch's data
+  // plus the owner's business-wide cash injections/withdrawals.
+  const inAdjustmentBranch = (_row: any) => true;
   const totalInjections = cashAdjustments
     .filter((c) => c.type === "injection")
     .filter(inAdjustmentBranch)
@@ -163,10 +160,10 @@ export default function Finance() {
     rows.push({ date: s.created_at, description: "Sale to exporter", moneyIn: Number(s.total_value), moneyOut: 0 })
   );
   purchases.filter(inBranch).forEach((p) =>
-    rows.push({ date: p.created_at, description: "Purchase from farmer", moneyIn: 0, moneyOut: Number(p.final_amount_paid) })
+    rows.push({ date: p.created_at, description: "Purchase from customer", moneyIn: 0, moneyOut: Number(p.final_amount_paid) })
   );
   advances.filter(inBranch).forEach((a) =>
-    rows.push({ date: a.created_at, description: "Advance given to farmer", moneyIn: 0, moneyOut: Number(a.amount) })
+    rows.push({ date: a.created_at, description: "Advance given to customer", moneyIn: 0, moneyOut: Number(a.amount) })
   );
   expenses.filter(inBranch).forEach((e) =>
     rows.push({ date: e.created_at, description: `Expense: ${e.category}${e.description ? ` (${e.description})` : ""}`, moneyIn: 0, moneyOut: Number(e.amount) })
@@ -212,24 +209,6 @@ export default function Finance() {
       <h1 className="text-2xl font-semibold mb-4">Finance</h1>
 
       <div className="no-print">
-
-      {profile.role === "owner" && branches.length > 0 && (
-        <select
-          className="w-full bg-surface border border-white/10 rounded-md p-3 text-sm mb-4"
-          value={branchFilter}
-          onChange={(e) => setBranchFilter(e.target.value)}
-        >
-          <option value="all">All branches</option>
-          {branches.map((b) => (
-            <option key={b.id} value={b.id}>{b.name}</option>
-          ))}
-        </select>
-      )}
-      {!isAllBranches && (
-        <p className="text-xs opacity-50 mb-4">
-          Business-wide cash injections/withdrawals (recorded by the owner) only appear in the "All branches" view. This branch's own entries are included here.
-        </p>
-      )}
 
       <div className="grid grid-cols-2 gap-3 mb-6">
         <div className="bg-surface border border-white/10 rounded-md p-4">

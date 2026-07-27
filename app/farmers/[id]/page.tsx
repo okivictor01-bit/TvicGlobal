@@ -33,7 +33,7 @@ export default function FarmerDetailPage() {
       .eq("id", farmerId)
       .single();
     if (farmerError || !farmerData) {
-      setError("Farmer not found.");
+      setError("Customer not found.");
       setLoading(false);
       return;
     }
@@ -156,7 +156,7 @@ export default function FarmerDetailPage() {
             </li>
           ))}
           {transactions.length === 0 && (
-            <p className="text-sm opacity-60">No transactions with this farmer yet.</p>
+            <p className="text-sm opacity-60">No transactions with this customer yet.</p>
           )}
         </ul>
 

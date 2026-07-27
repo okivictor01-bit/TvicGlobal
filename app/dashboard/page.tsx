@@ -103,7 +103,7 @@ export default function Dashboard() {
             className="block border border-white/10 rounded-lg p-4 hover:border-gold transition-colors"
           >
             <p className="font-semibold text-sm">Record a Purchase</p>
-            <p className="text-xs opacity-60">Weigh, grade, and pay a farmer</p>
+            <p className="text-xs opacity-60">Weigh, grade, and pay a customer</p>
           </a>
         )}
 
@@ -111,8 +111,8 @@ export default function Dashboard() {
           href="/farmers"
           className="block border border-white/10 rounded-lg p-4 hover:border-gold transition-colors"
         >
-          <p className="font-semibold text-sm">Farmers</p>
-          <p className="text-xs opacity-60">Add farmers, give advances, view balances</p>
+          <p className="font-semibold text-sm">Customers</p>
+          <p className="text-xs opacity-60">Add customers, give advances, view balances</p>
         </a>
 
         {profile?.role === "owner" && (
