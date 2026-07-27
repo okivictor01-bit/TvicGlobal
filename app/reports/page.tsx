@@ -224,6 +224,7 @@ export default function ReportsPage() {
         >
           Export as PDF
         </button>
+        <a href="/dashboard" className="no-print block mt-3 text-sm underline opacity-70 text-center">Back to Dashboard</a>
       </main>
     </>
   );

@@ -209,6 +209,8 @@ export default function SalesPage() {
       <a href="/inventory" className="block mt-6 text-gold underline text-sm">
         View Inventory
       </a>
+
+      <a href="/dashboard" className="block mt-3 text-sm underline opacity-70">Back to Dashboard</a>
     </main>
   );
 }

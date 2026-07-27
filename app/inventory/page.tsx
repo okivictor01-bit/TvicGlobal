@@ -157,6 +157,8 @@ export default function InventoryPage() {
       <a href="/sales" className="block mt-6 text-gold underline text-sm">
         + Record a Sale to Exporter
       </a>
+
+      <a href="/dashboard" className="block mt-3 text-sm underline opacity-70">Back to Dashboard</a>
     </main>
   );
 }

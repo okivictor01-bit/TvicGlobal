@@ -92,6 +92,8 @@ export default function BranchesPage() {
         To assign staff to a branch, use{" "}
         <a href="/staff/invite" className="text-gold underline">Invite Staff</a> and pick the branch there.
       </p>
+
+      <a href="/dashboard" className="block mt-6 text-sm underline opacity-70">Back to Dashboard</a>
     </main>
   );
 }

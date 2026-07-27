@@ -163,6 +163,8 @@ export default function StaffList() {
         ))}
         {staff.length === 0 && <p className="text-sm opacity-60">No staff yet.</p>}
       </ul>
+
+      <a href="/dashboard" className="block mt-6 text-sm underline opacity-70">Back to Dashboard</a>
     </main>
   );
 }

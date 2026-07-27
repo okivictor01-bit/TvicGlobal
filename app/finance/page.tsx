@@ -8,6 +8,13 @@ const EXPENSE_CATEGORIES = [
   "Maintenance", "Office Expenses", "Electricity", "Others",
 ];
 
+function toLocalDateKey(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 export default function Finance() {
   const router = useRouter();
   const [profile, setProfile] = useState<any>(null);
@@ -26,6 +33,7 @@ export default function Finance() {
 
   const [cashForm, setCashForm] = useState({ type: "injection", amount: "", description: "" });
   const [savingCash, setSavingCash] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(() => toLocalDateKey(new Date()));
 
   async function loadFinanceData(businessId: string) {
     const [{ data: p }, { data: s }, { data: a }, { data: e }, { data: c }] = await Promise.all([
@@ -179,10 +187,31 @@ export default function Finance() {
     return { ...r, balance: running };
   });
 
+  // Balance must reflect the full running total up to and including each
+  // transaction, so it's computed over ALL rows above -- only the display
+  // is filtered down to the selected date.
+  const cashBookForDate = cashBook.filter(
+    (row) => toLocalDateKey(new Date(row.date)) === selectedDate
+  );
+
+  function handleExportPdf() {
+    window.print();
+  }
+
   return (
-    <main className="min-h-screen p-6 max-w-2xl mx-auto">
-      <p className="font-mono text-xs tracking-widest text-gold uppercase mb-1">Agrobuyer</p>
+    <>
+      <style>{`
+        @media print {
+          .no-print { display: none !important; }
+          body { background: white !important; color: black !important; }
+          .print-card { border: 1px solid #ccc !important; background: white !important; color: black !important; }
+        }
+      `}</style>
+      <main className="min-h-screen p-6 max-w-2xl mx-auto">
+      <p className="font-mono text-xs tracking-widest text-gold uppercase mb-1 no-print">Agrobuyer</p>
       <h1 className="text-2xl font-semibold mb-4">Finance</h1>
+
+      <div className="no-print">
 
       {profile.role === "owner" && branches.length > 0 && (
         <select
@@ -306,8 +335,28 @@ export default function Finance() {
         </form>
       </div>
 
-      <h2 className="text-sm uppercase tracking-widest opacity-60 mb-3">Cash Book</h2>
-      <div className="overflow-x-auto mb-8">
+      </div>
+
+      <div className="flex items-center gap-3 mb-3 no-print">
+        <label className="text-sm opacity-70">Date:</label>
+        <input
+          type="date"
+          className="bg-surface border border-white/10 rounded-md p-2 text-sm"
+          value={selectedDate}
+          onChange={(e) => setSelectedDate(e.target.value)}
+        />
+        <button
+          onClick={handleExportPdf}
+          className="ml-auto bg-gold text-ink font-semibold rounded-md px-4 py-2 text-sm"
+        >
+          Export as PDF
+        </button>
+      </div>
+
+      <h2 className="text-sm uppercase tracking-widest opacity-60 mb-3">
+        Cash Book — {new Date(selectedDate + "T00:00:00").toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
+      </h2>
+      <div className="overflow-x-auto mb-8 print-card">
         <table className="w-full text-sm">
           <thead>
             <tr className="text-left border-b border-white/10 opacity-60">
@@ -319,7 +368,7 @@ export default function Finance() {
             </tr>
           </thead>
           <tbody>
-            {cashBook.map((row, i) => (
+            {cashBookForDate.map((row, i) => (
               <tr key={i} className="border-b border-white/5">
                 <td className="py-2 pr-2 whitespace-nowrap">{new Date(row.date).toLocaleDateString()}</td>
                 <td className="py-2 pr-2">{row.description}</td>
@@ -332,16 +381,17 @@ export default function Finance() {
                 <td className="py-2 text-right font-medium">{row.balance.toLocaleString()}</td>
               </tr>
             ))}
-            {cashBook.length === 0 && (
+            {cashBookForDate.length === 0 && (
               <tr>
-                <td colSpan={5} className="py-4 text-center opacity-60">No transactions yet.</td>
+                <td colSpan={5} className="py-4 text-center opacity-60">No transactions on this date.</td>
               </tr>
             )}
           </tbody>
         </table>
       </div>
 
-      <a href="/dashboard" className="text-sm underline opacity-70">Back to Dashboard</a>
+      <a href="/dashboard" className="text-sm underline opacity-70 no-print">Back to Dashboard</a>
     </main>
+    </>
   );
 }

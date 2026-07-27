@@ -115,6 +115,8 @@ export default function BillingPage() {
           })}
         </div>
       )}
+
+      <a href="/dashboard" className="block mt-6 text-sm underline opacity-70">Back to Dashboard</a>
     </main>
   );
 }

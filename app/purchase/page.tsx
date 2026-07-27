@@ -315,6 +315,7 @@ export default function PurchaseEntry() {
       {receipt && (
         <button onClick={() => window.print()} className="no-print w-full bg-gold text-ink font-semibold rounded-md p-3 mt-3">Download Receipt</button>
       )}
+      <a href="/dashboard" className="no-print block mt-6 text-sm underline opacity-70">Back to Dashboard</a>
       </main>
     </>
   );

@@ -175,6 +175,8 @@ export default function FarmersPage() {
             <p className="text-sm opacity-60">No farmers match your search or branch filter.</p>
           )}
       </ul>
+
+      <a href="/dashboard" className="block mt-6 text-sm underline opacity-70">Back to Dashboard</a>
     </main>
   );
 }
