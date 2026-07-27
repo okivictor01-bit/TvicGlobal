@@ -50,21 +50,16 @@ export default function Finance() {
         return;
       }
       const { data: prof } = await supabase.from("app_users").select("*").eq("id", user.id).single();
-      if (!prof || !["owner", "manager"].includes(prof.role)) {
+      if (!prof || prof.role !== "owner") {
         router.push("/dashboard");
         return;
       }
       setProfile(prof);
 
-      if (prof.role === "owner") {
-        const { data: branchList } = await supabase.from("branches").select("*").order("name");
-        setBranches(branchList || []);
-        if (branchList && branchList.length > 0) {
-          setExpenseForm((f) => ({ ...f, branchId: branchList[0].id }));
-        }
-      } else {
-        setBranchFilter(prof.branch_id);
-        setExpenseForm((f) => ({ ...f, branchId: prof.branch_id }));
+      const { data: branchList } = await supabase.from("branches").select("*").order("name");
+      setBranches(branchList || []);
+      if (branchList && branchList.length > 0) {
+        setExpenseForm((f) => ({ ...f, branchId: branchList[0].id }));
       }
 
       await loadFinanceData(prof.business_id);
@@ -110,7 +105,7 @@ export default function Finance() {
     setSavingCash(true);
     const { error: insertError } = await supabase.from("cash_adjustments").insert({
       business_id: profile.business_id,
-      branch_id: profile.role === "manager" ? profile.branch_id : null,
+      branch_id: null,
       type: cashForm.type,
       amount,
       description: cashForm.description || null,
@@ -276,47 +271,40 @@ export default function Finance() {
         </form>
       </div>
 
-      {(profile.role === "owner" || profile.role === "manager") && (
-        <div className="bg-surface border border-white/10 rounded-md p-4 mb-6">
-          <p className="text-sm font-semibold mb-3">Record a cash injection / withdrawal</p>
-          {profile.role === "manager" && (
-            <p className="text-xs opacity-50 mb-3">
-              This will only affect your branch's cash figures.
-            </p>
-          )}
-          <form onSubmit={handleCashAdjustment} className="space-y-3">
-            <select
-              className="w-full bg-transparent border border-white/10 rounded-md p-2 text-sm"
-              value={cashForm.type}
-              onChange={(e) => setCashForm({ ...cashForm, type: e.target.value })}
-            >
-              <option value="injection">Cash Injection (money in)</option>
-              <option value="withdrawal">Cash Withdrawal (money out)</option>
-            </select>
-            <input
-              type="number"
-              placeholder="Amount (NGN)"
-              className="w-full bg-transparent border border-white/10 rounded-md p-2 text-sm"
-              value={cashForm.amount}
-              onChange={(e) => setCashForm({ ...cashForm, amount: e.target.value })}
-              required
-            />
-            <input
-              placeholder="Description (optional, e.g. Opening balance)"
-              className="w-full bg-transparent border border-white/10 rounded-md p-2 text-sm"
-              value={cashForm.description}
-              onChange={(e) => setCashForm({ ...cashForm, description: e.target.value })}
-            />
-            <button
-              type="submit"
-              disabled={savingCash}
-              className="bg-gold text-ink font-semibold rounded-md px-4 py-2 text-sm disabled:opacity-50"
-            >
-              {savingCash ? "Saving..." : "Record"}
-            </button>
-          </form>
-        </div>
-      )}
+      <div className="bg-surface border border-white/10 rounded-md p-4 mb-6">
+        <p className="text-sm font-semibold mb-3">Record a cash injection / withdrawal</p>
+        <form onSubmit={handleCashAdjustment} className="space-y-3">
+          <select
+            className="w-full bg-transparent border border-white/10 rounded-md p-2 text-sm"
+            value={cashForm.type}
+            onChange={(e) => setCashForm({ ...cashForm, type: e.target.value })}
+          >
+            <option value="injection">Cash Injection (money in)</option>
+            <option value="withdrawal">Cash Withdrawal (money out)</option>
+          </select>
+          <input
+            type="number"
+            placeholder="Amount (NGN)"
+            className="w-full bg-transparent border border-white/10 rounded-md p-2 text-sm"
+            value={cashForm.amount}
+            onChange={(e) => setCashForm({ ...cashForm, amount: e.target.value })}
+            required
+          />
+          <input
+            placeholder="Description (optional, e.g. Opening balance)"
+            className="w-full bg-transparent border border-white/10 rounded-md p-2 text-sm"
+            value={cashForm.description}
+            onChange={(e) => setCashForm({ ...cashForm, description: e.target.value })}
+          />
+          <button
+            type="submit"
+            disabled={savingCash}
+            className="bg-gold text-ink font-semibold rounded-md px-4 py-2 text-sm disabled:opacity-50"
+          >
+            {savingCash ? "Saving..." : "Record"}
+          </button>
+        </form>
+      </div>
 
       <h2 className="text-sm uppercase tracking-widest opacity-60 mb-3">Cash Book</h2>
       <div className="overflow-x-auto mb-8">

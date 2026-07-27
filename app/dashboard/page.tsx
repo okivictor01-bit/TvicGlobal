@@ -173,7 +173,7 @@ export default function Dashboard() {
           </>
         )}
 
-        {(profile?.role === "owner" || profile?.role === "manager") && (
+        {profile?.role === "owner" && (
           <a
             href="/finance"
             className="block border border-white/10 rounded-lg p-4 hover:border-gold transition-colors"
