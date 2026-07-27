@@ -9,11 +9,10 @@ export default function Home() {
         Agrobuyer
       </p>
       <h1 className="text-3xl font-semibold mb-4 max-w-md text-[#F1EAD9]">
-        Run your produce buying business from your phone
+        Stop Losing Money to Manual Records. Manage Every Kilogram, Every Payment, Every Profit in One Place.
       </h1>
       <p className="text-sm max-w-sm mb-10 text-[#F1EAD9] opacity-80">
-        Multi-branch purchasing, customer advances, inventory, and sales to
-        exporters — all in one place, with a receipt for every transaction.
+        The complete farm produce procurement and accounting system that automates farmer advances, weight-based purchases, quality deductions, inventory, exporter sales, and financial reporting—giving you accurate records, faster operations, and total control over your business.
       </p>
 
       <div className="w-full max-w-xs space-y-3">

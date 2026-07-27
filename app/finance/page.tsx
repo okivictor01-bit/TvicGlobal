@@ -91,6 +91,7 @@ export default function Finance() {
       amount,
       description: expenseForm.description || null,
       recorded_by: profile.id,
+      approval_status: "approved",
     });
     setSavingExpense(false);
     if (insertError) {
@@ -127,6 +128,19 @@ export default function Finance() {
     await loadFinanceData(profile.business_id);
   }
 
+  async function handleApproveExpense(expenseId: string, decision: "approved" | "rejected") {
+    setError("");
+    const { error: updateError } = await supabase
+      .from("expenses")
+      .update({ approval_status: decision })
+      .eq("id", expenseId);
+    if (updateError) {
+      setError(updateError.message);
+      return;
+    }
+    await loadFinanceData(profile.business_id);
+  }
+
   if (loading) return <main className="min-h-screen flex items-center justify-center">Loading...</main>;
 
   const isAllBranches = true;
@@ -135,7 +149,9 @@ export default function Finance() {
   const totalPurchases = purchases.filter(inBranch).reduce((sum, r) => sum + Number(r.final_amount_paid || 0), 0);
   const totalSales = sales.filter(inBranch).reduce((sum, r) => sum + Number(r.total_value || 0), 0);
   const totalAdvances = advances.filter(inBranch).reduce((sum, r) => sum + Number(r.amount || 0), 0);
-  const totalExpenses = expenses.filter(inBranch).reduce((sum, r) => sum + Number(r.amount || 0), 0);
+  const approvedExpenses = expenses.filter((e) => e.approval_status === "approved");
+  const pendingExpenses = expenses.filter((e) => e.approval_status === "pending");
+  const totalExpenses = approvedExpenses.filter(inBranch).reduce((sum, r) => sum + Number(r.amount || 0), 0);
 
   // Finance is always business-wide now -- includes every branch's data
   // plus the owner's business-wide cash injections/withdrawals.
@@ -165,7 +181,7 @@ export default function Finance() {
   advances.filter(inBranch).forEach((a) =>
     rows.push({ date: a.created_at, description: "Advance given to customer", moneyIn: 0, moneyOut: Number(a.amount) })
   );
-  expenses.filter(inBranch).forEach((e) =>
+  approvedExpenses.filter(inBranch).forEach((e) =>
     rows.push({ date: e.created_at, description: `Expense: ${e.category}${e.description ? ` (${e.description})` : ""}`, moneyIn: 0, moneyOut: Number(e.amount) })
   );
   cashAdjustments.filter(inAdjustmentBranch).forEach((c) =>
@@ -230,6 +246,37 @@ export default function Finance() {
       </div>
 
       {error && <p className="text-rust text-sm mb-4">{error}</p>}
+
+      {pendingExpenses.length > 0 && (
+        <div className="bg-surface border border-gold/40 rounded-md p-4 mb-6">
+          <p className="text-sm font-semibold mb-3">
+            Pending Expense Approvals ({pendingExpenses.length})
+          </p>
+          <ul className="space-y-3">
+            {pendingExpenses.map((e) => (
+              <li key={e.id} className="border border-white/10 rounded-lg p-3">
+                <p className="font-semibold text-sm">{e.category} — NGN {Number(e.amount).toLocaleString()}</p>
+                {e.description && <p className="text-xs opacity-60 mt-1">{e.description}</p>}
+                <p className="text-xs opacity-40 mt-1">{new Date(e.created_at).toLocaleDateString()}</p>
+                <div className="flex gap-2 mt-2">
+                  <button
+                    onClick={() => handleApproveExpense(e.id, "approved")}
+                    className="bg-gold text-ink text-xs font-semibold rounded-md px-3 py-1.5"
+                  >
+                    Approve
+                  </button>
+                  <button
+                    onClick={() => handleApproveExpense(e.id, "rejected")}
+                    className="border border-rust text-rust text-xs font-semibold rounded-md px-3 py-1.5"
+                  >
+                    Reject
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <div className="bg-surface border border-white/10 rounded-md p-4 mb-6">
         <p className="text-sm font-semibold mb-3">Record an expense</p>

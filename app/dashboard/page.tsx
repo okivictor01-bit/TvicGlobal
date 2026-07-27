@@ -115,6 +115,16 @@ export default function Dashboard() {
           <p className="text-xs opacity-60">Add customers, give advances, view balances</p>
         </a>
 
+        {profile?.role === "manager" && (
+          <a
+            href="/expenses"
+            className="block border border-white/10 rounded-lg p-4 hover:border-gold transition-colors"
+          >
+            <p className="font-semibold text-sm">Expenses</p>
+            <p className="text-xs opacity-60">Submit branch expenses for owner approval</p>
+          </a>
+        )}
+
         {profile?.role === "owner" && (
           <a
             href="/branches"
