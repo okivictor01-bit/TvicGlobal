@@ -15,6 +15,9 @@ export default function FarmersPage() {
   const [loading, setLoading] = useState(true);
   const [branches, setBranches] = useState<any[]>([]);
   const [branchFilter, setBranchFilter] = useState<string>("all");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({ name: "", phone: "", location: "" });
+  const [savingEdit, setSavingEdit] = useState(false);
 
   useEffect(() => {
     load();
@@ -83,6 +86,32 @@ export default function FarmersPage() {
     load();
   }
 
+  function startEdit(f: any) {
+    setEditingId(f.id);
+    setEditForm({ name: f.name, phone: f.phone || "", location: f.location || "" });
+    setError("");
+  }
+
+  async function handleSaveEdit(farmerId: string) {
+    setError("");
+    if (!editForm.name.trim()) {
+      setError("Name can't be empty.");
+      return;
+    }
+    setSavingEdit(true);
+    const { error: updateError } = await supabase
+      .from("farmers")
+      .update({ name: editForm.name, phone: editForm.phone, location: editForm.location })
+      .eq("id", farmerId);
+    setSavingEdit(false);
+    if (updateError) {
+      setError(updateError.message);
+      return;
+    }
+    setEditingId(null);
+    load();
+  }
+
   if (loading) return <main className="min-h-screen flex items-center justify-center">Loading...</main>;
 
   return (
@@ -143,10 +172,59 @@ export default function FarmersPage() {
           .filter((f) => branchFilter === "all" || f.branch_id === branchFilter)
           .map((f) => (
           <li key={f.id} className="border border-white/10 rounded-lg p-4">
-            <a href={`/farmers/${f.id}`} className="block mb-2">
-              <p className="font-semibold text-gold underline">{f.name}</p>
-              <p className="text-xs opacity-60">{f.phone} {f.location ? `- ${f.location}` : ""}</p>
-            </a>
+            {editingId === f.id ? (
+              <div className="space-y-2 mb-3">
+                <input
+                  placeholder="Full name"
+                  className="w-full bg-surface border border-white/10 rounded-md p-2 text-sm"
+                  value={editForm.name}
+                  onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                  required
+                />
+                <input
+                  placeholder="Phone"
+                  className="w-full bg-surface border border-white/10 rounded-md p-2 text-sm"
+                  value={editForm.phone}
+                  onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                />
+                <input
+                  placeholder="Location"
+                  className="w-full bg-surface border border-white/10 rounded-md p-2 text-sm"
+                  value={editForm.location}
+                  onChange={(e) => setEditForm({ ...editForm, location: e.target.value })}
+                />
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleSaveEdit(f.id)}
+                    disabled={savingEdit}
+                    className="text-xs bg-gold text-ink font-semibold rounded-md px-3 py-2 disabled:opacity-50"
+                  >
+                    {savingEdit ? "Saving..." : "Save"}
+                  </button>
+                  <button
+                    onClick={() => setEditingId(null)}
+                    className="text-xs border border-white/10 rounded-md px-3 py-2"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-start justify-between mb-2">
+                <a href={`/farmers/${f.id}`} className="block">
+                  <p className="font-semibold text-gold underline">{f.name}</p>
+                  <p className="text-xs opacity-60">{f.phone} {f.location ? `- ${f.location}` : ""}</p>
+                </a>
+                {(profile?.role === "owner" || profile?.role === "manager") && (
+                  <button
+                    onClick={() => startEdit(f)}
+                    className="text-xs underline opacity-70 whitespace-nowrap ml-2"
+                  >
+                    Edit
+                  </button>
+                )}
+              </div>
+            )}
             <p className="text-sm font-mono text-gold mb-2">
               Outstanding: NGN {(balances[f.id] || 0).toLocaleString()}
             </p>
