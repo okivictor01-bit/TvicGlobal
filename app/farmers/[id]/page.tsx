@@ -14,6 +14,11 @@ export default function FarmerDetailPage() {
   const [balance, setBalance] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [editingPurchaseId, setEditingPurchaseId] = useState<string | null>(null);
+  const [editPurchaseForm, setEditPurchaseForm] = useState({
+    weight_kg: "", price_per_kg: "", quality_result: "", discount_value: "", advance_deducted: "",
+  });
+  const [savingPurchaseEdit, setSavingPurchaseEdit] = useState(false);
 
   useEffect(() => {
     load();
@@ -59,6 +64,7 @@ export default function FarmerDetailPage() {
       weight_kg: p.weight_kg,
       price_per_kg: p.price_per_kg,
       quality_result: p.quality_result,
+      quality_discount_value: p.quality_discount_value,
       net_value: p.net_value,
       advance_deducted: p.advance_deducted,
       final_amount_paid: p.final_amount_paid,
@@ -84,6 +90,60 @@ export default function FarmerDetailPage() {
     setBalance(totalAdvances - totalDeducted);
 
     setLoading(false);
+  }
+
+  function startEditPurchase(t: any) {
+    setEditingPurchaseId(t.id);
+    setEditPurchaseForm({
+      weight_kg: String(t.weight_kg),
+      price_per_kg: String(t.price_per_kg),
+      quality_result: t.quality_result || "",
+      discount_value: String(t.quality_discount_value || 0),
+      advance_deducted: String(t.advance_deducted || 0),
+    });
+    setError("");
+  }
+
+  async function handleSavePurchaseEdit(purchaseId: string) {
+    setError("");
+    const weight_kg = Number(editPurchaseForm.weight_kg);
+    const price_per_kg = Number(editPurchaseForm.price_per_kg);
+    const discount_value = Number(editPurchaseForm.discount_value) || 0;
+    const advance_deducted = Number(editPurchaseForm.advance_deducted) || 0;
+
+    if (!weight_kg || weight_kg <= 0 || !price_per_kg || price_per_kg <= 0) {
+      setError("Weight and price must be valid positive numbers.");
+      return;
+    }
+
+    const gross_value = weight_kg * price_per_kg;
+    const net_value = gross_value - discount_value;
+    const quality_discount_pct = gross_value > 0 ? Math.round((discount_value / gross_value) * 10000) / 100 : 0;
+    const final_amount_paid = net_value - advance_deducted;
+
+    setSavingPurchaseEdit(true);
+    const { error: updateError } = await supabase
+      .from("purchases")
+      .update({
+        weight_kg,
+        price_per_kg,
+        quality_result: editPurchaseForm.quality_result,
+        gross_value,
+        quality_discount_value: discount_value,
+        quality_discount_pct,
+        net_value,
+        advance_deducted,
+        final_amount_paid,
+      })
+      .eq("id", purchaseId);
+    setSavingPurchaseEdit(false);
+
+    if (updateError) {
+      setError(updateError.message);
+      return;
+    }
+    setEditingPurchaseId(null);
+    load();
   }
 
   if (loading) return <main className="min-h-screen flex items-center justify-center">Loading...</main>;
@@ -129,9 +189,81 @@ export default function FarmerDetailPage() {
                   <p className="text-xs text-olive uppercase tracking-wide mb-1">Advance Given</p>
                   <p className="font-mono text-sm mb-1">NGN {Number(t.amount).toLocaleString()}</p>
                 </>
+              ) : editingPurchaseId === t.id ? (
+                <div className="space-y-2 no-print">
+                  <p className="text-xs text-gold uppercase tracking-wide mb-1">Editing Purchase — {t.productName}</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      type="number"
+                      placeholder="Weight (kg)"
+                      className="bg-surface border border-white/10 rounded-md p-2 text-sm"
+                      value={editPurchaseForm.weight_kg}
+                      onChange={(e) => setEditPurchaseForm({ ...editPurchaseForm, weight_kg: e.target.value })}
+                    />
+                    <input
+                      type="number"
+                      placeholder="Price/kg"
+                      className="bg-surface border border-white/10 rounded-md p-2 text-sm"
+                      value={editPurchaseForm.price_per_kg}
+                      onChange={(e) => setEditPurchaseForm({ ...editPurchaseForm, price_per_kg: e.target.value })}
+                    />
+                  </div>
+                  <input
+                    placeholder="Quality result (e.g. Grade A, 12% moisture)"
+                    className="w-full bg-surface border border-white/10 rounded-md p-2 text-sm"
+                    value={editPurchaseForm.quality_result}
+                    onChange={(e) => setEditPurchaseForm({ ...editPurchaseForm, quality_result: e.target.value })}
+                  />
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-xs opacity-60">Quality discount (NGN)</label>
+                      <input
+                        type="number"
+                        className="w-full bg-surface border border-white/10 rounded-md p-2 text-sm"
+                        value={editPurchaseForm.discount_value}
+                        onChange={(e) => setEditPurchaseForm({ ...editPurchaseForm, discount_value: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs opacity-60">Advance deducted (NGN)</label>
+                      <input
+                        type="number"
+                        className="w-full bg-surface border border-white/10 rounded-md p-2 text-sm"
+                        value={editPurchaseForm.advance_deducted}
+                        onChange={(e) => setEditPurchaseForm({ ...editPurchaseForm, advance_deducted: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                  {error && <p className="text-rust text-xs">{error}</p>}
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleSavePurchaseEdit(t.id)}
+                      disabled={savingPurchaseEdit}
+                      className="text-xs bg-gold text-ink font-semibold rounded-md px-3 py-2 disabled:opacity-50"
+                    >
+                      {savingPurchaseEdit ? "Saving..." : "Save"}
+                    </button>
+                    <button
+                      onClick={() => setEditingPurchaseId(null)}
+                      className="text-xs border border-white/10 rounded-md px-3 py-2"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
               ) : (
                 <>
-                  <p className="text-xs text-gold uppercase tracking-wide mb-1">Purchase</p>
+                  <div className="flex items-start justify-between">
+                    <p className="text-xs text-gold uppercase tracking-wide mb-1">Purchase</p>
+                    {profile?.role === "owner" && (
+                      <button
+                        onClick={() => startEditPurchase(t)}
+                        className="no-print text-xs underline opacity-70"
+                      >
+                        Edit
+                      </button>
+                    )}
+                  </div>
                   <p className="text-sm mb-1">
                     {t.productName} - {Number(t.weight_kg).toLocaleString()} kg @ NGN{" "}
                     {Number(t.price_per_kg).toLocaleString()}/kg

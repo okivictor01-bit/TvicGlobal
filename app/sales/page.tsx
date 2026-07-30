@@ -21,6 +21,11 @@ export default function SalesPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
+  const [pastSales, setPastSales] = useState<any[]>([]);
+  const [editingSaleId, setEditingSaleId] = useState<string | null>(null);
+  const [editSaleForm, setEditSaleForm] = useState({ productId: "", exporterName: "", weight: "", price: "" });
+  const [savingSaleEdit, setSavingSaleEdit] = useState(false);
+
   useEffect(() => {
     load();
   }, []);
@@ -44,7 +49,18 @@ export default function SalesPage() {
     setProducts(productList || []);
     if (productList && productList.length > 0) setProductId(productList[0].id);
 
+    await loadPastSales(prof.business_id);
     setLoading(false);
+  }
+
+  async function loadPastSales(businessId: string) {
+    const { data } = await supabase
+      .from("sales")
+      .select("*, products(name), branches(name)")
+      .eq("business_id", businessId)
+      .order("created_at", { ascending: false })
+      .limit(50);
+    setPastSales(data || []);
   }
 
   async function computeAvailableStock() {
@@ -104,6 +120,47 @@ export default function SalesPage() {
     setSaving(false);
     setExporterName("");
     setWeight(0);
+    computeAvailableStock();
+    loadPastSales(profile.business_id);
+  }
+
+  function startEditSale(s: any) {
+    setEditingSaleId(s.id);
+    setEditSaleForm({
+      productId: s.product_id,
+      exporterName: s.exporter_name,
+      weight: String(s.weight_kg),
+      price: String(s.price_per_kg),
+    });
+    setError("");
+  }
+
+  async function handleSaveSaleEdit(saleId: string) {
+    setError("");
+    const w = Number(editSaleForm.weight);
+    const p = Number(editSaleForm.price);
+    if (!w || w <= 0 || !p || p <= 0 || !editSaleForm.exporterName.trim()) {
+      setError("Enter valid weight, price, and exporter name.");
+      return;
+    }
+    setSavingSaleEdit(true);
+    const { error: updateError } = await supabase
+      .from("sales")
+      .update({
+        product_id: editSaleForm.productId,
+        exporter_name: editSaleForm.exporterName,
+        weight_kg: w,
+        price_per_kg: p,
+        total_value: w * p,
+      })
+      .eq("id", saleId);
+    setSavingSaleEdit(false);
+    if (updateError) {
+      setError(updateError.message);
+      return;
+    }
+    setEditingSaleId(null);
+    loadPastSales(profile.business_id);
     computeAvailableStock();
   }
 
@@ -209,6 +266,87 @@ export default function SalesPage() {
       <a href="/inventory" className="block mt-6 text-gold underline text-sm">
         View Inventory
       </a>
+
+      <h2 className="text-sm uppercase tracking-widest opacity-60 mt-8 mb-3">Recent Sales</h2>
+      <ul className="space-y-3 mb-6">
+        {pastSales.map((s) => (
+          <li key={s.id} className="border border-white/10 rounded-lg p-4">
+            {editingSaleId === s.id ? (
+              <div className="space-y-2">
+                <select
+                  className="w-full bg-surface border border-white/10 rounded-md p-2 text-sm"
+                  value={editSaleForm.productId}
+                  onChange={(e) => setEditSaleForm({ ...editSaleForm, productId: e.target.value })}
+                >
+                  {products.map((p) => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
+                <input
+                  placeholder="Exporter name"
+                  className="w-full bg-surface border border-white/10 rounded-md p-2 text-sm"
+                  value={editSaleForm.exporterName}
+                  onChange={(e) => setEditSaleForm({ ...editSaleForm, exporterName: e.target.value })}
+                />
+                <div className="grid grid-cols-2 gap-2">
+                  <input
+                    type="number"
+                    placeholder="Weight (kg)"
+                    className="bg-surface border border-white/10 rounded-md p-2 text-sm"
+                    value={editSaleForm.weight}
+                    onChange={(e) => setEditSaleForm({ ...editSaleForm, weight: e.target.value })}
+                  />
+                  <input
+                    type="number"
+                    placeholder="Price/kg"
+                    className="bg-surface border border-white/10 rounded-md p-2 text-sm"
+                    value={editSaleForm.price}
+                    onChange={(e) => setEditSaleForm({ ...editSaleForm, price: e.target.value })}
+                  />
+                </div>
+                {error && <p className="text-rust text-xs">{error}</p>}
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleSaveSaleEdit(s.id)}
+                    disabled={savingSaleEdit}
+                    className="text-xs bg-gold text-ink font-semibold rounded-md px-3 py-2 disabled:opacity-50"
+                  >
+                    {savingSaleEdit ? "Saving..." : "Save"}
+                  </button>
+                  <button
+                    onClick={() => setEditingSaleId(null)}
+                    className="text-xs border border-white/10 rounded-md px-3 py-2"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="flex items-start justify-between">
+                  <p className="font-semibold text-sm">{s.products?.name} — {s.exporter_name}</p>
+                  {profile?.role === "owner" && (
+                    <button
+                      onClick={() => startEditSale(s)}
+                      className="text-xs underline opacity-70 whitespace-nowrap ml-2"
+                    >
+                      Edit
+                    </button>
+                  )}
+                </div>
+                <p className="text-xs opacity-60 mt-1">
+                  {s.branches?.name} · {Number(s.weight_kg).toLocaleString()} kg @ NGN {Number(s.price_per_kg).toLocaleString()}/kg
+                </p>
+                <p className="font-mono text-sm text-gold mt-1">
+                  NGN {Number(s.total_value).toLocaleString()}
+                </p>
+                <p className="text-xs opacity-40 mt-1">{new Date(s.created_at).toLocaleDateString()}</p>
+              </>
+            )}
+          </li>
+        ))}
+        {pastSales.length === 0 && <p className="text-sm opacity-60">No sales recorded yet.</p>}
+      </ul>
 
       <a href="/dashboard" className="block mt-3 text-sm underline opacity-70">Back to Dashboard</a>
     </main>
