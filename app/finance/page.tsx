@@ -19,6 +19,7 @@ export default function Finance() {
   const router = useRouter();
   const [profile, setProfile] = useState<any>(null);
   const [branches, setBranches] = useState<any[]>([]);
+  const [branchFilter, setBranchFilter] = useState<string>("all");
   const [purchases, setPurchases] = useState<any[]>([]);
   const [sales, setSales] = useState<any[]>([]);
   const [advances, setAdvances] = useState<any[]>([]);
@@ -32,6 +33,10 @@ export default function Finance() {
 
   const [cashForm, setCashForm] = useState({ type: "injection", amount: "", description: "" });
   const [savingCash, setSavingCash] = useState(false);
+
+  const [transferForm, setTransferForm] = useState({ branchId: "", amount: "", description: "" });
+  const [savingTransfer, setSavingTransfer] = useState(false);
+
   const [selectedDate, setSelectedDate] = useState(() => toLocalDateKey(new Date()));
 
   async function loadFinanceData(businessId: string) {
@@ -57,16 +62,21 @@ export default function Finance() {
         return;
       }
       const { data: prof } = await supabase.from("app_users").select("*").eq("id", user.id).single();
-      if (!prof || prof.role !== "owner") {
+      if (!prof || !["owner", "manager"].includes(prof.role)) {
         router.push("/dashboard");
         return;
       }
       setProfile(prof);
 
-      const { data: branchList } = await supabase.from("branches").select("*").order("name");
-      setBranches(branchList || []);
-      if (branchList && branchList.length > 0) {
-        setExpenseForm((f) => ({ ...f, branchId: branchList[0].id }));
+      if (prof.role === "owner") {
+        const { data: branchList } = await supabase.from("branches").select("*").order("name");
+        setBranches(branchList || []);
+        if (branchList && branchList.length > 0) {
+          setExpenseForm((f) => ({ ...f, branchId: branchList[0].id }));
+          setTransferForm((f) => ({ ...f, branchId: branchList[0].id }));
+        }
+      } else {
+        setBranchFilter(prof.branch_id);
       }
 
       await loadFinanceData(prof.business_id);
@@ -128,6 +138,49 @@ export default function Finance() {
     await loadFinanceData(profile.business_id);
   }
 
+  async function handleMoveToBranch(e: React.FormEvent) {
+    e.preventDefault();
+    setError("");
+    const amount = Number(transferForm.amount);
+    if (!amount || amount <= 0) {
+      setError("Enter a valid amount.");
+      return;
+    }
+    if (!transferForm.branchId) {
+      setError("Select a branch.");
+      return;
+    }
+    const branchName = branches.find((b) => b.id === transferForm.branchId)?.name || "branch";
+    const note = transferForm.description ? ` - ${transferForm.description}` : "";
+
+    setSavingTransfer(true);
+    const { error: insertError } = await supabase.from("cash_adjustments").insert([
+      {
+        business_id: profile.business_id,
+        branch_id: null,
+        type: "withdrawal",
+        amount,
+        description: `Transfer to ${branchName}${note}`,
+        recorded_by: profile.id,
+      },
+      {
+        business_id: profile.business_id,
+        branch_id: transferForm.branchId,
+        type: "injection",
+        amount,
+        description: `Transfer from business account${note}`,
+        recorded_by: profile.id,
+      },
+    ]);
+    setSavingTransfer(false);
+    if (insertError) {
+      setError(insertError.message);
+      return;
+    }
+    setTransferForm({ branchId: transferForm.branchId, amount: "", description: "" });
+    await loadFinanceData(profile.business_id);
+  }
+
   async function handleApproveExpense(expenseId: string, decision: "approved" | "rejected") {
     setError("");
     const { error: updateError } = await supabase
@@ -143,8 +196,8 @@ export default function Finance() {
 
   if (loading) return <main className="min-h-screen flex items-center justify-center">Loading...</main>;
 
-  const isAllBranches = true;
-  const inBranch = (_row: any) => true;
+  const isAllBranches = branchFilter === "all";
+  const inBranch = (row: any) => isAllBranches || row.branch_id === branchFilter;
 
   const totalPurchases = purchases.filter(inBranch).reduce((sum, r) => sum + Number(r.final_amount_paid || 0), 0);
   const totalSales = sales.filter(inBranch).reduce((sum, r) => sum + Number(r.total_value || 0), 0);
@@ -153,9 +206,13 @@ export default function Finance() {
   const pendingExpenses = expenses.filter((e) => e.approval_status === "pending");
   const totalExpenses = approvedExpenses.filter(inBranch).reduce((sum, r) => sum + Number(r.amount || 0), 0);
 
-  // Finance is always business-wide now -- includes every branch's data
-  // plus the owner's business-wide cash injections/withdrawals.
-  const inAdjustmentBranch = (_row: any) => true;
+  // "All branches": everything counts (business-wide entries + every
+  // branch's own entries -- transfers net to zero at this level since they
+  // create a matching withdrawal+injection pair).
+  // A specific branch: only that branch's own entries count (a business-
+  // wide owner injection with no branch_id isn't attributed to any one
+  // branch until it's actually moved there via a transfer).
+  const inAdjustmentBranch = (row: any) => isAllBranches || row.branch_id === branchFilter;
   const totalInjections = cashAdjustments
     .filter((c) => c.type === "injection")
     .filter(inAdjustmentBranch)
@@ -226,6 +283,24 @@ export default function Finance() {
 
       <div className="no-print">
 
+      {profile.role === "owner" && branches.length > 0 && (
+        <select
+          className="w-full bg-surface border border-white/10 rounded-md p-3 text-sm mb-4"
+          value={branchFilter}
+          onChange={(e) => setBranchFilter(e.target.value)}
+        >
+          <option value="all">All branches</option>
+          {branches.map((b) => (
+            <option key={b.id} value={b.id}>{b.name}</option>
+          ))}
+        </select>
+      )}
+      {!isAllBranches && (
+        <p className="text-xs opacity-50 mb-4">
+          Business-wide cash injections/withdrawals only appear in the "All branches" view. This branch's own entries (including money moved in from the business account) are included here.
+        </p>
+      )}
+
       <div className="grid grid-cols-2 gap-3 mb-6">
         <div className="bg-surface border border-white/10 rounded-md p-4">
           <p className="text-xs uppercase tracking-widest opacity-60">Cash Available</p>
@@ -247,7 +322,7 @@ export default function Finance() {
 
       {error && <p className="text-rust text-sm mb-4">{error}</p>}
 
-      {pendingExpenses.length > 0 && (
+      {profile.role === "owner" && pendingExpenses.length > 0 && (
         <div className="bg-surface border border-gold/40 rounded-md p-4 mb-6">
           <p className="text-sm font-semibold mb-3">
             Pending Expense Approvals ({pendingExpenses.length})
@@ -278,88 +353,135 @@ export default function Finance() {
         </div>
       )}
 
-      <div className="bg-surface border border-white/10 rounded-md p-4 mb-6">
-        <p className="text-sm font-semibold mb-3">Record an expense</p>
-        <form onSubmit={handleAddExpense} className="space-y-3">
-          {profile.role === "owner" && branches.length > 0 && (
-            <select
-              className="w-full bg-transparent border border-white/10 rounded-md p-2 text-sm"
-              value={expenseForm.branchId}
-              onChange={(e) => setExpenseForm({ ...expenseForm, branchId: e.target.value })}
-              required
-            >
-              {branches.map((b) => (
-                <option key={b.id} value={b.id}>{b.name}</option>
-              ))}
-            </select>
-          )}
-          <select
-            className="w-full bg-transparent border border-white/10 rounded-md p-2 text-sm"
-            value={expenseForm.category}
-            onChange={(e) => setExpenseForm({ ...expenseForm, category: e.target.value })}
-          >
-            {EXPENSE_CATEGORIES.map((c) => (
-              <option key={c} value={c}>{c}</option>
-            ))}
-          </select>
-          <input
-            type="number"
-            placeholder="Amount (NGN)"
-            className="w-full bg-transparent border border-white/10 rounded-md p-2 text-sm"
-            value={expenseForm.amount}
-            onChange={(e) => setExpenseForm({ ...expenseForm, amount: e.target.value })}
-            required
-          />
-          <input
-            placeholder="Description (optional)"
-            className="w-full bg-transparent border border-white/10 rounded-md p-2 text-sm"
-            value={expenseForm.description}
-            onChange={(e) => setExpenseForm({ ...expenseForm, description: e.target.value })}
-          />
-          <button
-            type="submit"
-            disabled={savingExpense}
-            className="bg-gold text-ink font-semibold rounded-md px-4 py-2 text-sm disabled:opacity-50"
-          >
-            {savingExpense ? "Saving..." : "Add Expense"}
-          </button>
-        </form>
-      </div>
+      {profile.role === "owner" && (
+        <>
+          <div className="bg-surface border border-white/10 rounded-md p-4 mb-6">
+            <p className="text-sm font-semibold mb-3">Record an expense</p>
+            <form onSubmit={handleAddExpense} className="space-y-3">
+              {branches.length > 0 && (
+                <select
+                  className="w-full bg-transparent border border-white/10 rounded-md p-2 text-sm"
+                  value={expenseForm.branchId}
+                  onChange={(e) => setExpenseForm({ ...expenseForm, branchId: e.target.value })}
+                  required
+                >
+                  {branches.map((b) => (
+                    <option key={b.id} value={b.id}>{b.name}</option>
+                  ))}
+                </select>
+              )}
+              <select
+                className="w-full bg-transparent border border-white/10 rounded-md p-2 text-sm"
+                value={expenseForm.category}
+                onChange={(e) => setExpenseForm({ ...expenseForm, category: e.target.value })}
+              >
+                {EXPENSE_CATEGORIES.map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+              <input
+                type="number"
+                placeholder="Amount (NGN)"
+                className="w-full bg-transparent border border-white/10 rounded-md p-2 text-sm"
+                value={expenseForm.amount}
+                onChange={(e) => setExpenseForm({ ...expenseForm, amount: e.target.value })}
+                required
+              />
+              <input
+                placeholder="Description (optional)"
+                className="w-full bg-transparent border border-white/10 rounded-md p-2 text-sm"
+                value={expenseForm.description}
+                onChange={(e) => setExpenseForm({ ...expenseForm, description: e.target.value })}
+              />
+              <button
+                type="submit"
+                disabled={savingExpense}
+                className="bg-gold text-ink font-semibold rounded-md px-4 py-2 text-sm disabled:opacity-50"
+              >
+                {savingExpense ? "Saving..." : "Add Expense"}
+              </button>
+            </form>
+          </div>
 
-      <div className="bg-surface border border-white/10 rounded-md p-4 mb-6">
-        <p className="text-sm font-semibold mb-3">Record a cash injection / withdrawal</p>
-        <form onSubmit={handleCashAdjustment} className="space-y-3">
-          <select
-            className="w-full bg-transparent border border-white/10 rounded-md p-2 text-sm"
-            value={cashForm.type}
-            onChange={(e) => setCashForm({ ...cashForm, type: e.target.value })}
-          >
-            <option value="injection">Cash Injection (money in)</option>
-            <option value="withdrawal">Cash Withdrawal (money out)</option>
-          </select>
-          <input
-            type="number"
-            placeholder="Amount (NGN)"
-            className="w-full bg-transparent border border-white/10 rounded-md p-2 text-sm"
-            value={cashForm.amount}
-            onChange={(e) => setCashForm({ ...cashForm, amount: e.target.value })}
-            required
-          />
-          <input
-            placeholder="Description (optional, e.g. Opening balance)"
-            className="w-full bg-transparent border border-white/10 rounded-md p-2 text-sm"
-            value={cashForm.description}
-            onChange={(e) => setCashForm({ ...cashForm, description: e.target.value })}
-          />
-          <button
-            type="submit"
-            disabled={savingCash}
-            className="bg-gold text-ink font-semibold rounded-md px-4 py-2 text-sm disabled:opacity-50"
-          >
-            {savingCash ? "Saving..." : "Record"}
-          </button>
-        </form>
-      </div>
+          <div className="bg-surface border border-white/10 rounded-md p-4 mb-6">
+            <p className="text-sm font-semibold mb-3">Record a cash injection / withdrawal</p>
+            <p className="text-xs opacity-50 mb-3">Business-wide only — not tied to any branch (e.g. opening balance, capital investment).</p>
+            <form onSubmit={handleCashAdjustment} className="space-y-3">
+              <select
+                className="w-full bg-transparent border border-white/10 rounded-md p-2 text-sm"
+                value={cashForm.type}
+                onChange={(e) => setCashForm({ ...cashForm, type: e.target.value })}
+              >
+                <option value="injection">Cash Injection (money in)</option>
+                <option value="withdrawal">Cash Withdrawal (money out)</option>
+              </select>
+              <input
+                type="number"
+                placeholder="Amount (NGN)"
+                className="w-full bg-transparent border border-white/10 rounded-md p-2 text-sm"
+                value={cashForm.amount}
+                onChange={(e) => setCashForm({ ...cashForm, amount: e.target.value })}
+                required
+              />
+              <input
+                placeholder="Description (optional, e.g. Opening balance)"
+                className="w-full bg-transparent border border-white/10 rounded-md p-2 text-sm"
+                value={cashForm.description}
+                onChange={(e) => setCashForm({ ...cashForm, description: e.target.value })}
+              />
+              <button
+                type="submit"
+                disabled={savingCash}
+                className="bg-gold text-ink font-semibold rounded-md px-4 py-2 text-sm disabled:opacity-50"
+              >
+                {savingCash ? "Saving..." : "Record"}
+              </button>
+            </form>
+          </div>
+
+          {branches.length > 0 && (
+            <div className="bg-surface border border-white/10 rounded-md p-4 mb-6">
+              <p className="text-sm font-semibold mb-3">Move money to a branch</p>
+              <p className="text-xs opacity-50 mb-3">
+                Moves cash from the business-wide account into a specific branch's own float.
+              </p>
+              <form onSubmit={handleMoveToBranch} className="space-y-3">
+                <select
+                  className="w-full bg-transparent border border-white/10 rounded-md p-2 text-sm"
+                  value={transferForm.branchId}
+                  onChange={(e) => setTransferForm({ ...transferForm, branchId: e.target.value })}
+                  required
+                >
+                  {branches.map((b) => (
+                    <option key={b.id} value={b.id}>{b.name}</option>
+                  ))}
+                </select>
+                <input
+                  type="number"
+                  placeholder="Amount (NGN)"
+                  className="w-full bg-transparent border border-white/10 rounded-md p-2 text-sm"
+                  value={transferForm.amount}
+                  onChange={(e) => setTransferForm({ ...transferForm, amount: e.target.value })}
+                  required
+                />
+                <input
+                  placeholder="Description (optional)"
+                  className="w-full bg-transparent border border-white/10 rounded-md p-2 text-sm"
+                  value={transferForm.description}
+                  onChange={(e) => setTransferForm({ ...transferForm, description: e.target.value })}
+                />
+                <button
+                  type="submit"
+                  disabled={savingTransfer}
+                  className="bg-gold text-ink font-semibold rounded-md px-4 py-2 text-sm disabled:opacity-50"
+                >
+                  {savingTransfer ? "Moving..." : "Move Money"}
+                </button>
+              </form>
+            </div>
+          )}
+        </>
+      )}
 
       </div>
 

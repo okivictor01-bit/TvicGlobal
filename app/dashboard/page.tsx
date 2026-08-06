@@ -115,6 +115,16 @@ export default function Dashboard() {
           <p className="text-xs opacity-60">Add customers, give advances, view balances</p>
         </a>
 
+        {(profile?.role === "owner" || profile?.role === "manager") && (
+          <a
+            href="/finance"
+            className="block border border-white/10 rounded-lg p-4 hover:border-gold transition-colors"
+          >
+            <p className="font-semibold text-sm">Finance</p>
+            <p className="text-xs opacity-60">Cash available, profit, cash book</p>
+          </a>
+        )}
+
         {profile?.role === "manager" && (
           <a
             href="/expenses"
@@ -181,16 +191,6 @@ export default function Dashboard() {
               <p className="text-xs opacity-60">Create a manager or secretary account</p>
             </a>
           </>
-        )}
-
-        {profile?.role === "owner" && (
-          <a
-            href="/finance"
-            className="block border border-white/10 rounded-lg p-4 hover:border-gold transition-colors"
-          >
-            <p className="font-semibold text-sm">Finance</p>
-            <p className="text-xs opacity-60">Cash available, profit, cash book, expenses</p>
-          </a>
         )}
 
         {profile?.role === "owner" && (

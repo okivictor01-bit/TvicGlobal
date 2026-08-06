@@ -59,6 +59,7 @@ export default function FarmerDetailPage() {
     const purchaseRows = (purchases || []).map((p: any) => ({
       type: "purchase" as const,
       id: p.id,
+      branch_id: p.branch_id,
       created_at: p.created_at,
       productName: p.products?.name || "Unknown",
       weight_kg: p.weight_kg,
@@ -146,6 +147,17 @@ export default function FarmerDetailPage() {
     load();
   }
 
+  async function handleDeletePurchase(purchaseId: string) {
+    if (!confirm("Delete this purchase permanently? This can't be undone.")) return;
+    setError("");
+    const { error: deleteError } = await supabase.from("purchases").delete().eq("id", purchaseId);
+    if (deleteError) {
+      setError(deleteError.message);
+      return;
+    }
+    load();
+  }
+
   if (loading) return <main className="min-h-screen flex items-center justify-center">Loading...</main>;
 
   if (error) {
@@ -169,7 +181,7 @@ export default function FarmerDetailPage() {
       <main className="min-h-screen p-8 max-w-lg mx-auto">
         <a href="/farmers" className="no-print text-xs text-gold underline mb-4 inline-block">Back to Farmers</a>
 
-        <p className="font-mono text-xs tracking-widest text-gold uppercase mb-1">TvicGlobal</p>
+        <p className="font-mono text-xs tracking-widest text-gold uppercase mb-1">Agrobuyer</p>
         <h1 className="text-2xl font-semibold mb-1">{farmer.name}</h1>
         <p className="text-xs opacity-60 mb-4">
           {farmer.phone} {farmer.location ? `- ${farmer.location}` : ""}
@@ -255,13 +267,21 @@ export default function FarmerDetailPage() {
                 <>
                   <div className="flex items-start justify-between">
                     <p className="text-xs text-gold uppercase tracking-wide mb-1">Purchase</p>
-                    {profile?.role === "owner" && (
-                      <button
-                        onClick={() => startEditPurchase(t)}
-                        className="no-print text-xs underline opacity-70"
-                      >
-                        Edit
-                      </button>
+                    {(profile?.role === "owner" || (profile?.role === "manager" && t.branch_id === profile.branch_id)) && (
+                      <div className="no-print flex gap-2">
+                        <button
+                          onClick={() => startEditPurchase(t)}
+                          className="text-xs underline opacity-70"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDeletePurchase(t.id)}
+                          className="text-xs underline text-rust"
+                        >
+                          Delete
+                        </button>
+                      </div>
                     )}
                   </div>
                   <p className="text-sm mb-1">

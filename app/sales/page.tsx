@@ -164,6 +164,18 @@ export default function SalesPage() {
     computeAvailableStock();
   }
 
+  async function handleDeleteSale(saleId: string) {
+    if (!confirm("Delete this sale permanently? This can't be undone.")) return;
+    setError("");
+    const { error: deleteError } = await supabase.from("sales").delete().eq("id", saleId);
+    if (deleteError) {
+      setError(deleteError.message);
+      return;
+    }
+    loadPastSales(profile.business_id);
+    computeAvailableStock();
+  }
+
   if (loading) return <main className="min-h-screen flex items-center justify-center">Loading...</main>;
 
   return (
@@ -325,13 +337,21 @@ export default function SalesPage() {
               <>
                 <div className="flex items-start justify-between">
                   <p className="font-semibold text-sm">{s.products?.name} — {s.exporter_name}</p>
-                  {profile?.role === "owner" && (
-                    <button
-                      onClick={() => startEditSale(s)}
-                      className="text-xs underline opacity-70 whitespace-nowrap ml-2"
-                    >
-                      Edit
-                    </button>
+                  {(profile?.role === "owner" || (profile?.role === "manager" && s.branch_id === profile.branch_id)) && (
+                    <div className="flex gap-2 ml-2 whitespace-nowrap">
+                      <button
+                        onClick={() => startEditSale(s)}
+                        className="text-xs underline opacity-70"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDeleteSale(s.id)}
+                        className="text-xs underline text-rust"
+                      >
+                        Delete
+                      </button>
+                    </div>
                   )}
                 </div>
                 <p className="text-xs opacity-60 mt-1">
