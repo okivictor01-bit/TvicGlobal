@@ -28,10 +28,14 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "You don't have permission to invite staff." }, { status: 403 });
   }
 
-  const { fullName, email, role, branchId } = await req.json();
+  const { fullName, email, role, branchId, tempPassword: providedPassword } = await req.json();
 
   if (!fullName || !email || !role || !branchId) {
     return NextResponse.json({ error: "All fields are required." }, { status: 400 });
+  }
+
+  if (providedPassword && providedPassword.length < 6) {
+    return NextResponse.json({ error: "Temporary password must be at least 6 characters." }, { status: 400 });
   }
 
   // Enforce role rules
@@ -47,7 +51,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "You can only invite staff to your own branch." }, { status: 403 });
   }
 
-  const tempPassword = generateTempPassword();
+  const tempPassword = providedPassword || generateTempPassword();
 
   const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
     email,

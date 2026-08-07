@@ -7,7 +7,7 @@ export default function InviteStaff() {
   const router = useRouter();
   const [profile, setProfile] = useState<any>(null);
   const [branches, setBranches] = useState<any[]>([]);
-  const [form, setForm] = useState({ fullName: "", email: "", role: "secretary", branchId: "" });
+  const [form, setForm] = useState({ fullName: "", email: "", role: "secretary", branchId: "", tempPassword: "" });
   const [error, setError] = useState("");
   const [result, setResult] = useState<any>(null);
   const [loading, setLoading] = useState(false);
@@ -118,6 +118,19 @@ export default function InviteStaff() {
               ))}
             </select>
           )}
+
+          <div>
+            <input
+              placeholder="Temporary password (optional)"
+              className="w-full bg-surface border border-white/10 rounded-md p-3"
+              value={form.tempPassword}
+              onChange={(e) => setForm({ ...form, tempPassword: e.target.value })}
+              minLength={6}
+            />
+            <p className="text-xs opacity-50 mt-1">
+              Leave blank to auto-generate one. At least 6 characters if you set your own. They can change it later from their dashboard.
+            </p>
+          </div>
 
           {error && <p className="text-rust text-sm">{error}</p>}
 
